@@ -2,7 +2,8 @@ package br.com.student.portal.validation;
 
 import br.com.student.portal.dto.request.UserRequest;
 import br.com.student.portal.entity.User;
-import br.com.student.portal.exception.BadRequestException;
+import br.com.student.portal.exception.ErrorCode;
+import br.com.student.portal.exception.types.BadRequestException;
 import org.springframework.stereotype.Component;
 
 import static br.com.student.portal.validation.FieldValidator.validateRequiredField;
@@ -12,46 +13,52 @@ import static java.util.regex.Pattern.matches;
 @Component
 public class UserValidator {
 
+    private static final String NAME_FIELD = "Nome";
+    private static final String EMAIL_FIELD = "Email";
+    private static final String PASSWORD_FIELD = "Senha";
 
-    //TODO: adding regex on the one Utils
-
+    private static final String NAME_REGEX = "^[a-zA-ZÀ-ÿ\\s]+$";
+    private static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+    private static final String PASSWORD_REGEX = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$";
 
     public static void validateName(String name) {
         if (isEmpty(name)) {
-            validateRequiredField(name, "Name");
+            validateRequiredField(name, NAME_FIELD);
         }
 
-        if (!name.matches("^[a-zA-Z\\s]+$")) {
-            throw new BadRequestException("Name should only contain letters and spaces.");
+        if (!name.matches(NAME_REGEX)) {
+            throw new BadRequestException(ErrorCode.FIELD_INVALID_FORMAT,
+                    NAME_FIELD + " deve conter apenas letras e espaços.");
         }
     }
 
     public static void validateEmail(String email) {
         if (isEmpty(email)) {
-            validateRequiredField(email, "Email");
+            validateRequiredField(email, EMAIL_FIELD);
         }
 
-        var emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
-        if (!matches(emailRegex, email)) {
-            throw new BadRequestException("Invalid email format.");
+        if (!matches(EMAIL_REGEX, email)) {
+            throw new BadRequestException(ErrorCode.INVALID_EMAIL, "Formato de email inválido.");
         }
 
+        // TODO: Considere remover essa validação ou torná-la configurável
+        // Restringir apenas a @gmail.com pode ser muito limitante
         if (!email.endsWith("@gmail.com")) {
-            throw new BadRequestException("Unrecognized Gmail Account Access Attempt");
+            throw new BadRequestException(ErrorCode.INVALID_EMAIL,
+                    "Apenas contas Gmail são permitidas.");
         }
     }
 
     public static void validatePassword(String password) {
         if (isEmpty(password)) {
-            validateRequiredField(password, "Password");
+            validateRequiredField(password, PASSWORD_FIELD);
         }
 
-        var passwordRegex = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$";
-        if (!matches(passwordRegex, password)) {
-            throw new BadRequestException("Password must be at least 8 characters long, contain at least one letter, one number, and one special character.");
+        if (!matches(PASSWORD_REGEX, password)) {
+            throw new BadRequestException(ErrorCode.INVALID_PASSWORD,
+                    "A senha deve ter no mínimo 8 caracteres, contendo pelo menos uma letra, um número e um caractere especial.");
         }
     }
-
 
     public static void validateFieldsUserRequest(UserRequest userRequest) {
         validateName(userRequest.getName());
@@ -64,9 +71,4 @@ public class UserValidator {
         validateEmail(user.getEmail());
         validatePassword(user.getPassword());
     }
-
-
 }
-
-
-

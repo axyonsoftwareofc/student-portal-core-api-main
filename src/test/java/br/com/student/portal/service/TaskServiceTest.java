@@ -1,7 +1,6 @@
 package br.com.student.portal.service;
 
 import br.com.student.portal.entity.Task;
-import br.com.student.portal.exception.ObjectNotFoundException;
 import br.com.student.portal.repository.TaskRepository;
 import br.com.student.portal.service.task.TaskService;
 import org.junit.Before;

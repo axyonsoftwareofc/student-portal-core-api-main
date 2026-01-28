@@ -5,7 +5,9 @@ import br.com.student.portal.dto.response.AnswerResponse;
 import br.com.student.portal.entity.Answer;
 import br.com.student.portal.entity.Question;
 import br.com.student.portal.entity.User;
-import br.com.student.portal.exception.ObjectNotFoundException;
+import br.com.student.portal.exception.ErrorCode;
+import br.com.student.portal.exception.types.ForbiddenException;
+import br.com.student.portal.exception.types.NotFoundException;
 import br.com.student.portal.repository.AnswerRepository;
 import br.com.student.portal.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +29,14 @@ public class AnswerService {
     private final QuestionRepository questionRepository;
 
     public AnswerResponse getAnswerById(UUID id) {
-        Answer answer = answerRepository.findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Resposta não encontrada com ID: " + id));
+        log.debug("Buscando resposta por ID: {}", id);
+        Answer answer = findAnswerById(id);
         return mapToResponse(answer);
     }
 
     @Transactional(readOnly = true)
     public List<AnswerResponse> getAnswersByQuestionId(UUID questionId) {
+        log.debug("Buscando respostas da pergunta: {}", questionId);
         return answerRepository.findByQuestionId(questionId)
                 .stream()
                 .map(this::mapToResponse)
@@ -41,8 +44,11 @@ public class AnswerService {
     }
 
     public AnswerResponse createAnswer(AnswerRequest request, UUID questionId, User author) {
+        log.info("Criando resposta para pergunta: {}", questionId);
+
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new ObjectNotFoundException("Pergunta não encontrada com ID: " + questionId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.QUESTION_NOT_FOUND,
+                        "Pergunta não encontrada com ID: " + questionId));
 
         Answer answer = Answer.builder()
                 .content(request.getContent())
@@ -52,44 +58,47 @@ public class AnswerService {
 
         Answer savedAnswer = answerRepository.save(answer);
 
-        question.setAnswerCount(question.getAnswerCount() + 1);
+        // Incrementar contador de respostas
+        question.incrementAnswerCount();
         questionRepository.save(question);
 
-        log.info("Resposta criada com ID: {} para pergunta: {}", savedAnswer.getId(), questionId);
+        log.info("Resposta criada com ID: {}", savedAnswer.getId());
         return mapToResponse(savedAnswer);
     }
 
-    public AnswerResponse updateAnswer(UUID id, AnswerRequest request, User author) {
-        Answer existingAnswer = answerRepository.findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Resposta não encontrada com ID: " + id));
+    public AnswerResponse updateAnswer(UUID id, AnswerRequest request, User requester) {
+        log.info("Atualizando resposta ID: {}", id);
 
-        if (!existingAnswer.getAuthor().getId().equals(author.getId())) {
-            throw new RuntimeException("Apenas o autor pode editar a resposta");
-        }
+        Answer existingAnswer = findAnswerById(id);
+        validateAuthorPermission(existingAnswer, requester, "editar");
 
         existingAnswer.setContent(request.getContent());
         Answer updatedAnswer = answerRepository.save(existingAnswer);
 
+        log.info("Resposta atualizada: {}", updatedAnswer.getId());
         return mapToResponse(updatedAnswer);
     }
 
     public void deleteAnswer(UUID id, User requester) {
-        Answer answer = answerRepository.findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Resposta não encontrada com ID: " + id));
+        log.info("Deletando resposta ID: {}", id);
+
+        Answer answer = findAnswerById(id);
 
         boolean isAuthor = answer.getAuthor().getId().equals(requester.getId());
-        boolean isAdmin = requester.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ADMIN"));
+        boolean isAdmin = requester.isAdmin();
 
         if (!isAuthor && !isAdmin) {
-            throw new RuntimeException("Não autorizado a deletar esta resposta");
+            throw new ForbiddenException(ErrorCode.FORBIDDEN,
+                    "Você não tem permissão para deletar esta resposta.");
         }
 
+        // Decrementar contador de respostas
         Question question = answer.getQuestion();
-        question.setAnswerCount(Math.max(0, question.getAnswerCount() - 1));
+        question.decrementAnswerCount();
         questionRepository.save(question);
 
         answerRepository.delete(answer);
+        log.info("Resposta deletada: {}", id);
     }
 
     @Transactional(readOnly = true)
@@ -99,10 +108,26 @@ public class AnswerService {
 
     @Transactional(readOnly = true)
     public List<AnswerResponse> getAnswersByAuthor(UUID authorId) {
+        log.debug("Buscando respostas do autor: {}", authorId);
         return answerRepository.findByAuthorId(authorId)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    // ==================== MÉTODOS AUXILIARES ====================
+
+    private Answer findAnswerById(UUID id) {
+        return answerRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND,
+                        "Resposta não encontrada com ID: " + id));
+    }
+
+    private void validateAuthorPermission(Answer answer, User requester, String action) {
+        if (!answer.getAuthor().getId().equals(requester.getId())) {
+            throw new ForbiddenException(ErrorCode.FORBIDDEN,
+                    "Apenas o autor pode " + action + " esta resposta.");
+        }
     }
 
     private AnswerResponse mapToResponse(Answer entity) {

@@ -2,36 +2,49 @@ package br.com.student.portal.controller;
 
 import br.com.student.portal.entity.Task;
 import br.com.student.portal.service.task.TaskService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
-import static org.apache.tomcat.websocket.Constants.FOUND;
-import static org.springframework.http.HttpStatus.CREATED;
-
 @RestController
-@AllArgsConstructor
-@RequestMapping("/tasks")
+@RequiredArgsConstructor
+@RequestMapping("/api/tasks")
 public class TaskController {
 
     private final TaskService taskService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Optional<Task>> findTaskById(@PathVariable UUID id) {
-        return ResponseEntity.status(FOUND).body(taskService.findTaskById(id));
+    @GetMapping
+    public ResponseEntity<List<Task>> getAllTasks() {
+        return ResponseEntity.ok(taskService.getAllTasks());
     }
 
-    @PostMapping("/create")
+    @GetMapping("/{id}")
+    public ResponseEntity<Task> findTaskById(@PathVariable UUID id) {
+        // Agora retorna Task diretamente (não Optional)
+        var task = taskService.findTaskById(id);
+        return ResponseEntity.ok(task);
+    }
+
+    @PostMapping
     public ResponseEntity<Task> createTask(@RequestBody Task task) {
-        return ResponseEntity.status(CREATED).body(taskService.createTask(task));
+        var createdTask = taskService.createTask(task);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Task> updateTask(@PathVariable UUID id, @RequestBody Task task) {
+        var updatedTask = taskService.updateTask(id, task);
+        return ResponseEntity.ok(updatedTask);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> taskDelete(@PathVariable UUID id) {
-        taskService.taskDelete(id);
+    public ResponseEntity<Void> deleteTask(@PathVariable UUID id) {
+        // Método renomeado de taskDelete para deleteTask
+        taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
     }
 }

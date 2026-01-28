@@ -3,7 +3,8 @@ package br.com.student.portal.controller;
 import br.com.student.portal.dto.request.UserRequest;
 import br.com.student.portal.dto.response.UserResponse;
 import br.com.student.portal.service.user.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,15 +12,16 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     @PostMapping
     public ResponseEntity<UserResponse> createUser(@RequestBody UserRequest userRequest) {
-        return ResponseEntity.ok(userService.createUser(userRequest));
+        var createdUser = userService.createUser(userRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 
     @GetMapping("/{id}")
@@ -30,6 +32,11 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @GetMapping("/registration/{registration}")
+    public ResponseEntity<UserResponse> getUserByRegistration(@PathVariable String registration) {
+        return ResponseEntity.ok(userService.getUserByRegistration(registration));
     }
 
     @PutMapping("/{id}")

@@ -3,7 +3,6 @@ package br.com.student.portal.service;
 import br.com.student.portal.dto.request.UserRequest;
 import br.com.student.portal.dto.response.UserResponse;
 import br.com.student.portal.entity.UserEntity;
-import br.com.student.portal.exception.ObjectNotFoundException;
 import br.com.student.portal.mapper.UserMapper;
 import br.com.student.portal.repository.UserRepository;
 import br.com.student.portal.service.user.UserService;
