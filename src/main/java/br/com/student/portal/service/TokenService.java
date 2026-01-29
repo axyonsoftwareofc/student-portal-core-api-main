@@ -1,8 +1,6 @@
-package br.com.student.portal.service.auth;
+package br.com.student.portal.service;
 
 import br.com.student.portal.entity.User;
-import br.com.student.portal.exception.ErrorCode;
-import br.com.student.portal.exception.types.InternalServerException;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
@@ -11,6 +9,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -38,12 +37,6 @@ public class TokenService {
         log.info("TokenService inicializado com sucesso");
     }
 
-    /**
-     * Gera um token JWT para o usuário autenticado.
-     *
-     * @param user Usuário autenticado
-     * @return Token JWT assinado
-     */
     public String generateToken(User user) {
         try {
             Instant expiresAt = LocalDateTime.now()
@@ -66,16 +59,10 @@ public class TokenService {
 
         } catch (JWTCreationException ex) {
             log.error("Erro ao gerar token JWT para usuário {}: {}", user.getEmail(), ex.getMessage());
-            throw new InternalServerException("Erro ao gerar token de autenticação.", ex);
+            throw new InternalAuthenticationServiceException("Erro ao gerar token de autenticação.", ex);
         }
     }
 
-    /**
-     * Valida o token e retorna o email (subject) do usuário.
-     *
-     * @param token Token JWT
-     * @return Email do usuário ou null se inválido
-     */
     public String validateToken(String token) {
         try {
             DecodedJWT decodedJWT = JWT.require(algorithm)
@@ -89,46 +76,7 @@ public class TokenService {
 
         } catch (JWTVerificationException ex) {
             log.debug("Token inválido ou expirado: {}", ex.getMessage());
-            return null; // ✅ Retorna null ao invés de lançar exceção
-        }
-    }
-
-    /**
-     * Extrai informações do token sem validar a assinatura.
-     * Útil para logging e debugging.
-     *
-     * @param token Token JWT
-     * @return DecodedJWT ou null se mal formatado
-     */
-    public DecodedJWT decodeToken(String token) {
-        try {
-            return JWT.decode(token);
-        } catch (Exception ex) {
-            log.debug("Erro ao decodificar token: {}", ex.getMessage());
             return null;
-        }
-    }
-
-    /**
-     * Verifica se o token está próximo de expirar (últimos 30 minutos).
-     *
-     * @param token Token JWT
-     * @return true se deve ser renovado
-     */
-    public boolean shouldRefreshToken(String token) {
-        try {
-            DecodedJWT decoded = JWT.require(algorithm)
-                    .withIssuer(ISSUER)
-                    .build()
-                    .verify(token);
-
-            Instant expiresAt = decoded.getExpiresAtAsInstant();
-            Instant refreshThreshold = Instant.now().plusSeconds(30 * 60); // 30 minutos
-
-            return expiresAt.isBefore(refreshThreshold);
-
-        } catch (JWTVerificationException ex) {
-            return false;
         }
     }
 }

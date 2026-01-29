@@ -49,8 +49,6 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "access_enable", nullable = false)
     private Boolean accessEnable = true;
 
-    // ==================== UserDetails ====================
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return switch (role) {
@@ -99,8 +97,6 @@ public class User extends BaseEntity implements UserDetails {
     public boolean isEnabled() {
         return Boolean.TRUE.equals(accessEnable);
     }
-
-    // ==================== Utility Methods ====================
 
     public boolean isAdmin() {
         return role != null && role.isAdmin();

@@ -55,8 +55,6 @@ public class Payment extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    // ==================== Utility Methods ====================
-
     public boolean isOverdue() {
         return status == PaymentStatus.PENDENTE &&
                 dueDate != null &&

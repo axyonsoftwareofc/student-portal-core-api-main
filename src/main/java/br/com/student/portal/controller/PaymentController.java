@@ -2,7 +2,7 @@ package br.com.student.portal.controller;
 
 import br.com.student.portal.dto.request.PaymentRequest;
 import br.com.student.portal.dto.response.PaymentResponse;
-import br.com.student.portal.service.payment.PaymentService;
+import br.com.student.portal.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

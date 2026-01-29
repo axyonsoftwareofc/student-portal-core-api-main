@@ -2,8 +2,7 @@ package br.com.student.portal.validation;
 
 import br.com.student.portal.dto.request.CourseRequest;
 import br.com.student.portal.entity.Course;
-import br.com.student.portal.exception.ErrorCode;
-import br.com.student.portal.exception.types.BadRequestException;
+import br.com.student.portal.exception.BadRequestException;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -33,7 +32,7 @@ public class CourseValidator {
     public static void validateDates(LocalDate startDate, LocalDate endDate) {
         if (startDate != null && endDate != null) {
             if (endDate.isBefore(startDate)) {
-                throw new BadRequestException(ErrorCode.INVALID_DATE_RANGE,
+                throw new BadRequestException(
                         END_DATE_FIELD + " não pode ser anterior a " + START_DATE_FIELD + ".");
             }
         }

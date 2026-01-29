@@ -3,7 +3,7 @@ package br.com.student.portal.controller;
 import br.com.student.portal.dto.request.TaskRequest;
 import br.com.student.portal.dto.response.TaskResponse;
 import br.com.student.portal.entity.User;
-import br.com.student.portal.service.task.TaskService;
+import br.com.student.portal.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,13 +41,6 @@ public class TaskController {
     @Operation(summary = "Lista tarefas de um curso")
     public ResponseEntity<List<TaskResponse>> getTasksByCourse(@PathVariable UUID courseId) {
         return ResponseEntity.ok(taskService.getTasksByCourse(courseId));
-    }
-
-    @GetMapping("/upcoming")
-    @Operation(summary = "Lista tarefas com prazo próximo")
-    public ResponseEntity<List<TaskResponse>> getUpcomingTasks(
-            @RequestParam(defaultValue = "7") int days) {
-        return ResponseEntity.ok(taskService.getUpcomingTasks(days));
     }
 
     @GetMapping("/overdue")

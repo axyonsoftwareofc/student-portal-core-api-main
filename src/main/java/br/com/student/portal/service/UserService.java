@@ -1,11 +1,10 @@
-package br.com.student.portal.service.user;
+package br.com.student.portal.service;
 
 import br.com.student.portal.dto.request.UserRequest;
 import br.com.student.portal.dto.response.UserResponse;
 import br.com.student.portal.entity.User;
-import br.com.student.portal.exception.ErrorCode;
-import br.com.student.portal.exception.types.ConflictException;
-import br.com.student.portal.exception.types.NotFoundException;
+import br.com.student.portal.exception.BadRequestException;
+import br.com.student.portal.exception.ObjectNotFoundException;
 import br.com.student.portal.mapper.UserMapper;
 import br.com.student.portal.repository.UserRepository;
 import lombok.AllArgsConstructor;
@@ -33,16 +32,14 @@ public class UserService {
 
         validateFieldsUserRequest(userRequest);
 
-        // Verificar email duplicado
         if (userRepository.findByEmail(userRequest.getEmail()).isPresent()) {
-            throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS,
+            throw new BadRequestException(
                     "O email " + userRequest.getEmail() + " já está cadastrado.");
         }
 
-        // Verificar matrícula duplicada
         if (userRequest.getRegistration() != null &&
                 userRepository.findByRegistration(userRequest.getRegistration()).isPresent()) {
-            throw new ConflictException(ErrorCode.REGISTRATION_ALREADY_EXISTS,
+            throw new BadRequestException(
                     "A matrícula " + userRequest.getRegistration() + " já está cadastrada.");
         }
 
@@ -66,7 +63,7 @@ public class UserService {
         var users = userRepository.findAll();
 
         if (users.isEmpty()) {
-            throw new NotFoundException(ErrorCode.USER_NOT_FOUND, "Nenhum usuário encontrado.");
+            throw new ObjectNotFoundException("Nenhum usuário encontrado.");
         }
 
         return users.stream()
@@ -80,11 +77,10 @@ public class UserService {
         var user = findUserById(id);
         validateFieldsUserRequest(userRequest);
 
-        // Verificar se o novo email já está em uso por outro usuário
         userRepository.findByEmail(userRequest.getEmail())
                 .filter(existingUser -> !existingUser.getId().equals(id))
                 .ifPresent(existingUser -> {
-                    throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS,
+                    throw new BadRequestException(
                             "O email " + userRequest.getEmail() + " já está em uso.");
                 });
 
@@ -111,14 +107,14 @@ public class UserService {
     public UserResponse getUserByRegistration(String registration) {
         log.debug("Buscando usuário por matrícula: {}", registration);
         User user = userRepository.findByRegistration(registration)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND,
+                .orElseThrow(() -> new ObjectNotFoundException(
                         "Usuário com matrícula " + registration + " não encontrado."));
         return userMapper.userIntoUserResponse(user);
     }
 
     private User findUserById(UUID id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND,
+                .orElseThrow(() -> new ObjectNotFoundException(
                         "Usuário não encontrado com ID: " + id));
     }
 }

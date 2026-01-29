@@ -1,13 +1,12 @@
-package br.com.student.portal.service.payment;
+package br.com.student.portal.service;
 
 import br.com.student.portal.dto.request.PaymentRequest;
 import br.com.student.portal.dto.response.PaymentResponse;
 import br.com.student.portal.entity.Payment;
 import br.com.student.portal.entity.User;
 import br.com.student.portal.entity.enums.PaymentStatus;
-import br.com.student.portal.exception.ErrorCode;
-import br.com.student.portal.exception.types.BadRequestException;
-import br.com.student.portal.exception.types.NotFoundException;
+import br.com.student.portal.exception.BadRequestException;
+import br.com.student.portal.exception.ObjectNotFoundException;
 import br.com.student.portal.repository.PaymentRepository;
 import br.com.student.portal.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -66,10 +65,11 @@ public class PaymentService {
         log.info("Criando novo pagamento para estudante: {}", request.getStudentId());
 
         User student = userRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND,
+                .orElseThrow(() -> new ObjectNotFoundException(
                         "Estudante não encontrado com ID: " + request.getStudentId()));
 
-        Payment payment = Payment.builder()
+        //TODO:MOVER ESSA LÓGICA ABAIXO PARA UM BUILDER
+        var payment = Payment.builder()
                 .student(student)
                 .amount(request.getAmount())
                 .dueDate(request.getDueDate())
@@ -77,7 +77,7 @@ public class PaymentService {
                 .status(PaymentStatus.PENDENTE)
                 .build();
 
-        Payment savedPayment = paymentRepository.save(payment);
+        var savedPayment = paymentRepository.save(payment);
         log.info("Pagamento criado com ID: {}", savedPayment.getId());
 
         return mapToResponse(savedPayment);
@@ -90,7 +90,7 @@ public class PaymentService {
         Payment payment = findPaymentOrThrow(id);
 
         if (!payment.allowsModification()) {
-            throw new BadRequestException(ErrorCode.OPERATION_NOT_ALLOWED,
+            throw new BadRequestException(
                     "Pagamento não pode ser alterado no status atual: " + payment.getStatus());
         }
 
@@ -105,10 +105,10 @@ public class PaymentService {
     public PaymentResponse cancelPayment(UUID id) {
         log.info("Cancelando pagamento {}", id);
 
-        Payment payment = findPaymentOrThrow(id);
+        var payment = findPaymentOrThrow(id);
 
         if (!payment.allowsModification()) {
-            throw new BadRequestException(ErrorCode.OPERATION_NOT_ALLOWED,
+            throw new BadRequestException(
                     "Pagamento não pode ser cancelado no status atual: " + payment.getStatus());
         }
 
@@ -122,7 +122,7 @@ public class PaymentService {
     @Transactional
     public void deletePayment(UUID id) {
         log.info("Deletando pagamento ID: {}", id);
-        Payment payment = findPaymentOrThrow(id);
+        var payment = findPaymentOrThrow(id);
         paymentRepository.delete(payment);
         log.info("Pagamento deletado: {}", id);
     }
@@ -147,21 +147,21 @@ public class PaymentService {
                 paymentRepository.existsByStudentIdAndStatus(studentId, PaymentStatus.ATRASADO);
     }
 
-    // ==================== Métodos Privados ====================
 
     private Payment findPaymentOrThrow(UUID id) {
         return paymentRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.PAYMENT_NOT_FOUND,
+                .orElseThrow(() -> new ObjectNotFoundException(
                         "Pagamento não encontrado com ID: " + id));
     }
 
     private void validateStudentExists(UUID studentId) {
         if (!userRepository.existsById(studentId)) {
-            throw new NotFoundException(ErrorCode.USER_NOT_FOUND,
+            throw new ObjectNotFoundException(
                     "Estudante não encontrado com ID: " + studentId);
         }
     }
 
+    //TODO:MOVER ISSO PARA UM MAPPER
     private PaymentResponse mapToResponse(Payment payment) {
         return PaymentResponse.builder()
                 .id(payment.getId())

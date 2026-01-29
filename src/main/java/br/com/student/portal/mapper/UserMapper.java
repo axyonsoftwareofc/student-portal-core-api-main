@@ -46,23 +46,6 @@ public class UserMapper {
         return toResponse(user);
     }
 
-    public void updateEntityFromRequest(UserRequest request, User user) {
-        if (request == null || user == null) return;
-
-        if (request.getName() != null && !request.getName().isBlank()) {
-            user.setName(request.getName());
-        }
-        if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            user.setEmail(request.getEmail());
-        }
-        if (request.getRegistration() != null) {
-            user.setRegistration(request.getRegistration());
-        }
-        if (request.getRole() != null && !request.getRole().isBlank()) {
-            user.setRole(parseRole(request.getRole()));
-        }
-    }
-
     private UserRole parseRole(String role) {
         if (role == null || role.isBlank()) {
             return UserRole.STUDENT;

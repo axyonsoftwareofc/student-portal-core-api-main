@@ -1,20 +1,17 @@
-package br.com.student.portal.service.course;
+package br.com.student.portal.service;
 
 import br.com.student.portal.dto.request.CourseRequest;
 import br.com.student.portal.dto.response.CourseResponse;
 import br.com.student.portal.entity.Course;
 import br.com.student.portal.entity.enums.CourseStatus;
-import br.com.student.portal.exception.ErrorCode;
-import br.com.student.portal.exception.types.ConflictException;
-import br.com.student.portal.exception.types.NotFoundException;
+import br.com.student.portal.exception.BadRequestException;
+import br.com.student.portal.exception.ObjectNotFoundException;
 import br.com.student.portal.repository.CourseRepository;
-import br.com.student.portal.repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,13 +21,11 @@ import java.util.UUID;
 public class CourseService {
 
     private final CourseRepository courseRepository;
-    private final EnrollmentRepository enrollmentRepository;
 
     @Transactional(readOnly = true)
     public CourseResponse getCourseById(UUID id) {
         log.debug("Buscando curso por ID: {}", id);
-        Course course = findCourseOrThrow(id);
-        return mapToResponse(course);
+        return mapToResponse(findCourseOrThrow(id));
     }
 
     @Transactional(readOnly = true)
@@ -49,32 +44,16 @@ public class CourseService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<CourseResponse> getEnrollableCourses() {
-        log.debug("Buscando cursos disponíveis para matrícula");
-        return courseRepository.findEnrollableCourses().stream()
-                .map(this::mapToResponse)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<CourseResponse> searchCourses(String term) {
-        log.debug("Buscando cursos com termo: {}", term);
-        return courseRepository.searchByTerm(term).stream()
-                .map(this::mapToResponse)
-                .toList();
-    }
-
     @Transactional
     public CourseResponse createCourse(CourseRequest request) {
         log.info("Criando novo curso: {}", request.getName());
 
         if (courseRepository.existsByNameIgnoreCase(request.getName())) {
-            throw new ConflictException(ErrorCode.RESOURCE_ALREADY_EXISTS,
-                    "Já existe um curso com o nome: " + request.getName());
+            throw new BadRequestException("Já existe um curso com o nome: " + request.getName());
         }
 
-        Course course = Course.builder()
+        //TODO:MIGRAR ESSE BUILDER PRA UM MAPPER
+        var course = Course.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .startDate(request.getStartDate())
@@ -82,7 +61,7 @@ public class CourseService {
                 .status(request.getStatus() != null ? request.getStatus() : CourseStatus.DRAFT)
                 .build();
 
-        Course savedCourse = courseRepository.save(course);
+        var savedCourse = courseRepository.save(course);
         log.info("Curso criado com ID: {}", savedCourse.getId());
 
         return mapToResponse(savedCourse);
@@ -92,7 +71,7 @@ public class CourseService {
     public CourseResponse updateCourse(UUID id, CourseRequest request) {
         log.info("Atualizando curso ID: {}", id);
 
-        Course course = findCourseOrThrow(id);
+        var course = findCourseOrThrow(id);
 
         course.setName(request.getName());
         course.setDescription(request.getDescription());
@@ -103,27 +82,9 @@ public class CourseService {
             course.setStatus(request.getStatus());
         }
 
-        Course updatedCourse = courseRepository.save(course);
+        var updatedCourse = courseRepository.save(course);
         log.info("Curso atualizado: {}", updatedCourse.getId());
 
-        return mapToResponse(updatedCourse);
-    }
-
-    @Transactional
-    public CourseResponse activateCourse(UUID id) {
-        log.info("Ativando curso ID: {}", id);
-        Course course = findCourseOrThrow(id);
-        course.activate();
-        Course updatedCourse = courseRepository.save(course);
-        return mapToResponse(updatedCourse);
-    }
-
-    @Transactional
-    public CourseResponse completeCourse(UUID id) {
-        log.info("Concluindo curso ID: {}", id);
-        Course course = findCourseOrThrow(id);
-        course.complete();
-        Course updatedCourse = courseRepository.save(course);
         return mapToResponse(updatedCourse);
     }
 
@@ -131,28 +92,17 @@ public class CourseService {
     public void deleteCourse(UUID id) {
         log.info("Deletando curso ID: {}", id);
         Course course = findCourseOrThrow(id);
-
-        long enrollments = enrollmentRepository.countActiveEnrollmentsByCourse(id);
-        if (enrollments > 0) {
-            throw new ConflictException(ErrorCode.CANNOT_DELETE_WITH_DEPENDENCIES,
-                    "Não é possível excluir o curso. Existem " + enrollments + " matrículas ativas.");
-        }
-
         courseRepository.delete(course);
         log.info("Curso deletado: {}", id);
     }
 
-    // ==================== Métodos Privados ====================
-
     private Course findCourseOrThrow(UUID id) {
         return courseRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.COURSE_NOT_FOUND,
-                        "Curso não encontrado com ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Curso não encontrado com ID: " + id));
     }
 
+    //TODO:MOVER ESSA FUNÇÃO ABAIXO PARA UM MAPPER
     private CourseResponse mapToResponse(Course course) {
-        long enrollmentCount = enrollmentRepository.countActiveEnrollmentsByCourse(course.getId());
-
         return CourseResponse.builder()
                 .id(course.getId())
                 .name(course.getName())
@@ -162,8 +112,6 @@ public class CourseService {
                 .status(course.getStatus())
                 .statusDisplayName(course.getStatus().getDisplayName())
                 .isActive(course.isActive())
-                .isEnrollable(course.isEnrollable())
-                .enrollmentCount(enrollmentCount)
                 .createdAt(course.getCreatedAt())
                 .updatedAt(course.getUpdatedAt())
                 .build();

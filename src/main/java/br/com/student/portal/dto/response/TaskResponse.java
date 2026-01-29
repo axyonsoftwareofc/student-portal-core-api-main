@@ -14,7 +14,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TaskResponse {
-
     private UUID id;
     private String title;
     private String name;

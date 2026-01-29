@@ -47,7 +47,6 @@ public class Course extends BaseEntity {
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Task> tasks = new ArrayList<>();
 
-    // ==================== Utility Methods ====================
 
     public boolean isActive() {
         if (status != CourseStatus.ACTIVE) return false;
@@ -58,9 +57,6 @@ public class Course extends BaseEntity {
         return started && notEnded;
     }
 
-    public boolean isEnrollable() {
-        return status != null && status.isEnrollable();
-    }
 
     public void activate() {
         this.status = CourseStatus.ACTIVE;

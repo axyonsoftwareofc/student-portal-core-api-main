@@ -1,4 +1,4 @@
-package br.com.student.portal.service.task;
+package br.com.student.portal.service;
 
 import br.com.student.portal.dto.request.TaskRequest;
 import br.com.student.portal.dto.response.TaskResponse;
@@ -6,11 +6,9 @@ import br.com.student.portal.entity.Course;
 import br.com.student.portal.entity.Task;
 import br.com.student.portal.entity.User;
 import br.com.student.portal.entity.enums.TaskStatus;
-import br.com.student.portal.exception.ErrorCode;
-import br.com.student.portal.exception.types.NotFoundException;
+import br.com.student.portal.exception.ObjectNotFoundException;
 import br.com.student.portal.repository.CourseRepository;
 import br.com.student.portal.repository.TaskRepository;
-import br.com.student.portal.repository.TaskSubmissionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +18,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static br.com.student.portal.validation.TaskValidator.validateTaskFields;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -27,7 +27,6 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final CourseRepository courseRepository;
-    private final TaskSubmissionRepository submissionRepository;
 
     @Transactional(readOnly = true)
     public TaskResponse getTaskById(UUID id) {
@@ -53,16 +52,6 @@ public class TaskService {
     }
 
     @Transactional(readOnly = true)
-    public List<TaskResponse> getUpcomingTasks(int days) {
-        log.debug("Buscando tarefas para os próximos {} dias", days);
-        LocalDateTime start = LocalDateTime.now();
-        LocalDateTime end = start.plusDays(days);
-        return taskRepository.findUpcomingTasks(start, end).stream()
-                .map(this::mapToResponse)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public List<TaskResponse> getOverdueTasks() {
         log.debug("Buscando tarefas atrasadas");
         return taskRepository.findOverdueTasks(LocalDateTime.now()).stream()
@@ -71,49 +60,54 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskResponse createTask(TaskRequest request, User createdBy) {
-        log.info("Criando nova tarefa: {}", request.getTitle());
+    public TaskResponse createTask(TaskRequest taskRequest, User createdBy) {
+        log.info("Criando nova tarefa: {}", taskRequest.getTitle());
 
-        Course course = courseRepository.findById(request.getCourseId())
-                .orElseThrow(() -> new NotFoundException(ErrorCode.COURSE_NOT_FOUND,
-                        "Curso não encontrado com ID: " + request.getCourseId()));
+        var course = courseRepository.findById(taskRequest.getCourseId())
+                .orElseThrow(() -> new ObjectNotFoundException(
+                        "Curso não encontrado com ID: " + taskRequest.getCourseId()));
 
-        Task task = Task.builder()
-                .title(request.getTitle())
-                .name(request.getName())
-                .description(request.getDescription())
-                .deadline(request.getDeadline())
+        //TODO:MOVER PARA UM BUILDER
+        var task = Task.builder()
+                .title(taskRequest.getTitle())
+                .name(taskRequest.getName())
+                .description(taskRequest.getDescription())
+                .deadline(taskRequest.getDeadline())
                 .course(course)
                 .createdBy(createdBy)
                 .status(TaskStatus.PENDING)
                 .build();
 
-        Task savedTask = taskRepository.save(task);
+        validateTaskFields(task);
+
+        var savedTask = taskRepository.save(task);
         log.info("Tarefa criada com ID: {}", savedTask.getId());
 
         return mapToResponse(savedTask);
     }
 
     @Transactional
-    public TaskResponse updateTask(UUID id, TaskRequest request) {
+    public TaskResponse updateTask(UUID id, TaskRequest taskRequest) {
         log.info("Atualizando tarefa ID: {}", id);
 
-        Task task = findTaskOrThrow(id);
+        var task = findTaskOrThrow(id);
 
-        task.setTitle(request.getTitle());
-        task.setName(request.getName());
-        task.setDescription(request.getDescription());
-        task.setDeadline(request.getDeadline());
+        task.setTitle(taskRequest.getTitle());
+        task.setName(taskRequest.getName());
+        task.setDescription(taskRequest.getDescription());
+        task.setDeadline(taskRequest.getDeadline());
 
-        if (request.getCourseId() != null &&
-                !request.getCourseId().equals(task.getCourse().getId())) {
-            Course newCourse = courseRepository.findById(request.getCourseId())
-                    .orElseThrow(() -> new NotFoundException(ErrorCode.COURSE_NOT_FOUND,
-                            "Curso não encontrado com ID: " + request.getCourseId()));
+        if (taskRequest.getCourseId() != null &&
+                !taskRequest.getCourseId().equals(task.getCourse().getId())) {
+            Course newCourse = courseRepository.findById(taskRequest.getCourseId())
+                    .orElseThrow(() -> new ObjectNotFoundException(
+                            "Curso não encontrado com ID: " + taskRequest.getCourseId()));
             task.setCourse(newCourse);
         }
 
-        Task updatedTask = taskRepository.save(task);
+        validateTaskFields(task);
+
+        var updatedTask = taskRepository.save(task);
         log.info("Tarefa atualizada: {}", updatedTask.getId());
 
         return mapToResponse(updatedTask);
@@ -127,22 +121,14 @@ public class TaskService {
         log.info("Tarefa deletada: {}", id);
     }
 
-    // ==================== Métodos Privados ====================
-
     private Task findTaskOrThrow(UUID id) {
         return taskRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.TASK_NOT_FOUND,
+                .orElseThrow(() -> new ObjectNotFoundException(
                         "Tarefa não encontrada com ID: " + id));
     }
 
+    //TODO:MOVER ESSA FUNÇÃO PARA UM MAPPER
     private TaskResponse mapToResponse(Task task) {
-        long submissionCount = 0;
-        try {
-            submissionCount = submissionRepository.countByTaskId(task.getId());
-        } catch (Exception e) {
-            log.debug("Não foi possível contar submissões: {}", e.getMessage());
-        }
-
         return TaskResponse.builder()
                 .id(task.getId())
                 .title(task.getTitle())
@@ -155,8 +141,7 @@ public class TaskService {
                 .courseName(task.getCourse().getName())
                 .createdById(task.getCreatedBy() != null ? task.getCreatedBy().getId() : null)
                 .createdByName(task.getCreatedBy() != null ? task.getCreatedBy().getName() : null)
-                .overdue(task.isOverdue())  // ✅ Corrigido: overdue, não isOverdue
-                .submissionCount(submissionCount)
+                .overdue(task.isOverdue())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
                 .build();
