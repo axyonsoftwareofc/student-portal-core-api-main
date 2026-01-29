@@ -109,6 +109,12 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- ACTUATOR - Health Check para Render -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- ===================================
              TESTING
         =================================== -->

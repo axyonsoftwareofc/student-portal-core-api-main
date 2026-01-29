@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: student-portal-api
+    runtime: docker
+    repo: https://github.com/seu-usuario/student-portal  # Altere para seu repo
+    branch: main
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SPRING_DATASOURCE_URL
+        sync: false  # Configurar manualmente no dashboard
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true  # Render gera automaticamente
+      - key: SERVER_PORT
+        value: 8080
+      - key: JAVA_OPTS
+        value: -Xmx256m -Xms128m
