@@ -1,25 +1,23 @@
 package br.com.student.portal.entity;
 
+import br.com.student.portal.entity.base.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Entidade Answer
- * Representa uma resposta a uma pergunta
- */
 @Entity
-@Table(name = "answers")
-@Data
+@Table(name = "answers", indexes = {
+        @Index(name = "idx_answers_user_id", columnList = "user_id"),
+        @Index(name = "idx_answers_question_id", columnList = "question_id"),
+        @Index(name = "idx_answers_created_at", columnList = "created_at")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Answer {
+public class Answer extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -36,23 +34,17 @@ public class Answer {
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Builder.Default
+    @Column(name = "is_accepted")
+    private Boolean accepted = false;
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    // ==================== Utility Methods ====================
 
-    /**
-     * Prepopulate timestamps antes de salvar
-     */
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+    public boolean isAccepted() {
+        return Boolean.TRUE.equals(accepted);
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public void accept() {
+        this.accepted = true;
     }
 }

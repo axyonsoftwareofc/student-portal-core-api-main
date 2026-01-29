@@ -1,74 +1,76 @@
 package br.com.student.portal.entity;
 
+import br.com.student.portal.entity.base.BaseEntity;
+import br.com.student.portal.entity.enums.CourseStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-/**
- * Entidade Course
- * Representa um curso no sistema
- * Pode ter múltiplos módulos
- */
 @Entity
-@Table(name = "course_entity")
-@Data
+@Table(name = "courses", indexes = {
+        @Index(name = "idx_courses_status", columnList = "status"),
+        @Index(name = "idx_courses_start_date", columnList = "start_date")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Course {
+public class Course extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String name;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column
+    @Column(name = "start_date")
     private LocalDate startDate;
 
-    @Column
+    @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(length = 50)
-    private String status;
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private CourseStatus status = CourseStatus.DRAFT;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Builder.Default
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Task> tasks = new ArrayList<>();
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    // ==================== Utility Methods ====================
 
-    /**
-     * Prepopulate timestamps antes de salvar
-     */
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Verifica se o curso está ativo
-     */
     public boolean isActive() {
+        if (status != CourseStatus.ACTIVE) return false;
+
         LocalDate today = LocalDate.now();
         boolean started = startDate == null || !today.isBefore(startDate);
-        boolean notEnded = endDate == null || today.isBefore(endDate);
+        boolean notEnded = endDate == null || !today.isAfter(endDate);
         return started && notEnded;
+    }
+
+    public boolean isEnrollable() {
+        return status != null && status.isEnrollable();
+    }
+
+    public void activate() {
+        this.status = CourseStatus.ACTIVE;
+    }
+
+    public void complete() {
+        this.status = CourseStatus.COMPLETED;
+    }
+
+    public void cancel() {
+        this.status = CourseStatus.CANCELLED;
     }
 }

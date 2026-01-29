@@ -1,107 +1,55 @@
 package br.com.student.portal.entity;
 
+import br.com.student.portal.entity.base.BaseEntity;
 import br.com.student.portal.entity.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Entidade User consolidada
- * Representa qualquer usuário do sistema: Administrador, Professor ou Estudante
- *
- * O papel é definido pelo campo 'role'
- */
 @Entity
-@Table(name = "users")
-@Data
+@Table(name = "users", indexes = {
+        @Index(name = "idx_users_email", columnList = "email"),
+        @Index(name = "idx_users_registration", columnList = "registration"),
+        @Index(name = "idx_users_role", columnList = "role")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class User implements UserDetails {
+@Builder
+public class User extends BaseEntity implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String name;
 
-    @Column(unique = true, nullable = false, length = 255)
+    @Column(unique = true, nullable = false)
     private String email;
 
     @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private UserRole role;
 
-    /**
-     * Número de matrícula/registro do usuário
-     * Usado para estudantes e professores
-     */
-    @Column(unique = true, length = 255)
+    @Column(unique = true)
     private String registration;
 
-    /**
-     * Define se o usuário pode acessar o sistema
-     */
-    @Column(nullable = false)
+    @Builder.Default
+    @Column(name = "access_enable", nullable = false)
     private Boolean accessEnable = true;
 
-    /**
-     * Timestamps automáticos
-     */
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
-
-    /**
-     * Construtor para criação rápida com dados essenciais
-     */
-    public User(String name, String email, String password, UserRole role) {
-        this.name = name;
-        this.email = email;
-        this.password = password;
-        this.role = role;
-        this.accessEnable = true;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Construtor com matrícula
-     */
-    public User(String name, String email, String password, String registration, UserRole role) {
-        this(name, email, password, role);
-        this.registration = registration;
-    }
-
-    /**
-     * Prepopulate timestamps antes de salvar
-     */
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    // ============ UserDetails Implementation ============
+    // ==================== UserDetails ====================
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -109,6 +57,7 @@ public class User implements UserDetails {
             case SUPER_USER -> List.of(
                     new SimpleGrantedAuthority("ROLE_SUPER_USER"),
                     new SimpleGrantedAuthority("ROLE_ADMIN"),
+                    new SimpleGrantedAuthority("ROLE_TEACHER"),
                     new SimpleGrantedAuthority("ROLE_USER")
             );
             case ADMIN -> List.of(
@@ -148,29 +97,24 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return accessEnable;
+        return Boolean.TRUE.equals(accessEnable);
     }
 
-    // ============ Utility Methods ============
+    // ==================== Utility Methods ====================
 
-    /**
-     * Verifica se é administrador
-     */
     public boolean isAdmin() {
-        return role == UserRole.ADMIN || role == UserRole.SUPER_USER;
+        return role != null && role.isAdmin();
     }
 
-    /**
-     * Verifica se é professor
-     */
     public boolean isTeacher() {
         return role == UserRole.TEACHER;
     }
 
-    /**
-     * Verifica se é estudante
-     */
     public boolean isStudent() {
         return role == UserRole.STUDENT;
+    }
+
+    public boolean hasAccess() {
+        return Boolean.TRUE.equals(accessEnable);
     }
 }

@@ -1,25 +1,24 @@
 package br.com.student.portal.entity;
 
+import br.com.student.portal.entity.base.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-/**
- * Entidade Question
- * Representa uma pergunta feita por usuários (estudantes ou professores)
- */
 @Entity
-@Table(name = "questions")
-@Data
+@Table(name = "questions", indexes = {
+        @Index(name = "idx_questions_user_id", columnList = "user_id"),
+        @Index(name = "idx_questions_created_at", columnList = "created_at")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Question {
+public class Question extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -36,49 +35,26 @@ public class Question {
     private User author;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column(name = "answer_count", nullable = false)
     private Integer answerCount = 0;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Builder.Default
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Answer> answers = new ArrayList<>();
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    // ==================== Utility Methods ====================
 
-    /**
-     * Prepopulate timestamps antes de salvar
-     */
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (answerCount == null) {
-            answerCount = 0;
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Incrementar contador de respostas
-     */
     public void incrementAnswerCount() {
-        if (this.answerCount == null) {
-            this.answerCount = 1;
-        } else {
-            this.answerCount++;
-        }
+        this.answerCount = (this.answerCount == null ? 0 : this.answerCount) + 1;
     }
 
-    /**
-     * Decrementar contador de respostas
-     */
     public void decrementAnswerCount() {
         if (this.answerCount != null && this.answerCount > 0) {
             this.answerCount--;
         }
+    }
+
+    public boolean hasAnswers() {
+        return this.answerCount != null && this.answerCount > 0;
     }
 }

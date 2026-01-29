@@ -2,71 +2,68 @@ package br.com.student.portal.validation;
 
 import br.com.student.portal.dto.request.UserRequest;
 import br.com.student.portal.entity.User;
-import br.com.student.portal.exception.BadRequestException;
+import br.com.student.portal.exception.ErrorCode;
+import br.com.student.portal.exception.types.BadRequestException;
 import org.springframework.stereotype.Component;
 
-import static br.com.student.portal.validation.FieldValidator.validateRequiredField;
-import static io.micrometer.common.util.StringUtils.isEmpty;
-import static java.util.regex.Pattern.matches;
+import static br.com.student.portal.validation.FieldValidator.*;
 
 @Component
 public class UserValidator {
 
+    private static final String NAME_FIELD = "Nome";
+    private static final String EMAIL_FIELD = "Email";
+    private static final String PASSWORD_FIELD = "Senha";
 
-    //TODO: adding regex on the one Utils
-
+    private static final String NAME_REGEX = "^[a-zA-ZÀ-ÿ\\s]+$";
+    private static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+    private static final String PASSWORD_REGEX = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$";
 
     public static void validateName(String name) {
-        if (isEmpty(name)) {
-            validateRequiredField(name, "Name");
-        }
-
-        if (!name.matches("^[a-zA-Z\\s]+$")) {
-            throw new BadRequestException("Name should only contain letters and spaces.");
-        }
+        validateRequiredField(name, NAME_FIELD);
+        validatePattern(name, NAME_FIELD, NAME_REGEX,
+                NAME_FIELD + " deve conter apenas letras e espaços.");
     }
 
     public static void validateEmail(String email) {
-        if (isEmpty(email)) {
-            validateRequiredField(email, "Email");
-        }
+        validateRequiredField(email, EMAIL_FIELD);
+        validatePattern(email, EMAIL_FIELD, EMAIL_REGEX, "Formato de email inválido.");
 
-        var emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
-        if (!matches(emailRegex, email)) {
-            throw new BadRequestException("Invalid email format.");
-        }
-
-        if (!email.endsWith("@gmail.com")) {
-            throw new BadRequestException("Unrecognized Gmail Account Access Attempt");
-        }
+        // TODO: Remover essa restrição se quiser aceitar outros emails
+        // if (!email.endsWith("@gmail.com")) {
+        //     throw new BadRequestException(ErrorCode.INVALID_EMAIL,
+        //             "Apenas contas Gmail são permitidas.");
+        // }
     }
 
     public static void validatePassword(String password) {
-        if (isEmpty(password)) {
-            validateRequiredField(password, "Password");
-        }
+        validateRequiredField(password, PASSWORD_FIELD);
+        validatePattern(password, PASSWORD_FIELD, PASSWORD_REGEX,
+                "A senha deve ter no mínimo 8 caracteres, contendo pelo menos uma letra, um número e um caractere especial.");
+    }
 
-        var passwordRegex = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$";
-        if (!matches(passwordRegex, password)) {
-            throw new BadRequestException("Password must be at least 8 characters long, contain at least one letter, one number, and one special character.");
+    public static void validateFieldsUserRequest(UserRequest userRequest) {
+        validateRequiredField(userRequest, "UserRequest");
+        validateName(userRequest.getName());
+        validateEmail(userRequest.getEmail());
+
+        // Senha pode ser opcional em update
+        if (isNotEmpty(userRequest.getPassword())) {
+            validatePassword(userRequest.getPassword());
         }
     }
 
-
-    public static void validateFieldsUserRequest(UserRequest userRequest) {
+    public static void validateFieldsUserRequestForCreate(UserRequest userRequest) {
+        validateRequiredField(userRequest, "UserRequest");
         validateName(userRequest.getName());
         validateEmail(userRequest.getEmail());
-        validatePassword(userRequest.getPassword());
+        validatePassword(userRequest.getPassword()); // Obrigatório na criação
     }
 
     public static void validateFields(User user) {
+        validateRequiredField(user, "User");
         validateName(user.getName());
         validateEmail(user.getEmail());
         validatePassword(user.getPassword());
     }
-
-
 }
-
-
-
