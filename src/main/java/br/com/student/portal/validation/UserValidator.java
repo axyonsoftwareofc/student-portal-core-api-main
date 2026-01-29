@@ -2,8 +2,6 @@ package br.com.student.portal.validation;
 
 import br.com.student.portal.dto.request.UserRequest;
 import br.com.student.portal.entity.User;
-import br.com.student.portal.exception.ErrorCode;
-import br.com.student.portal.exception.types.BadRequestException;
 import org.springframework.stereotype.Component;
 
 import static br.com.student.portal.validation.FieldValidator.*;

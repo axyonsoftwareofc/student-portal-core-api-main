@@ -3,7 +3,7 @@ package br.com.student.portal.controller;
 import br.com.student.portal.dto.request.TaskRequest;
 import br.com.student.portal.dto.response.TaskResponse;
 import br.com.student.portal.entity.User;
-import br.com.student.portal.service.task.TaskService;
+import br.com.student.portal.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

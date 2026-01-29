@@ -17,7 +17,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentResponse {
-
     private UUID id;
     private UUID studentId;
     private String studentName;

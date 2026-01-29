@@ -15,7 +15,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CourseResponse {
-
     private UUID id;
     private String name;
     private String description;

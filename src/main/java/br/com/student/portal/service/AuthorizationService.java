@@ -1,4 +1,4 @@
-package br.com.student.portal.service.auth;
+package br.com.student.portal.service;
 
 import br.com.student.portal.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

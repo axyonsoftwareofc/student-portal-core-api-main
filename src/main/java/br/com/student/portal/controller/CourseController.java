@@ -2,7 +2,7 @@ package br.com.student.portal.controller;
 
 import br.com.student.portal.dto.request.CourseRequest;
 import br.com.student.portal.dto.response.CourseResponse;
-import br.com.student.portal.service.course.CourseService;
+import br.com.student.portal.service.CourseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,24 +41,12 @@ public class CourseController {
         return ResponseEntity.ok(courseService.getActiveCourses());
     }
 
-    @GetMapping("/enrollable")
-    @Operation(summary = "Lista cursos disponíveis para matrícula")
-    public ResponseEntity<List<CourseResponse>> getEnrollableCourses() {
-        return ResponseEntity.ok(courseService.getEnrollableCourses());
-    }
-
-    @GetMapping("/search")
-    @Operation(summary = "Busca cursos por termo")
-    public ResponseEntity<List<CourseResponse>> searchCourses(@RequestParam String term) {
-        return ResponseEntity.ok(courseService.searchCourses(term));
-    }
-
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cria um novo curso")
     public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
-        CourseResponse response = courseService.createCourse(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(courseService.createCourse(request));
     }
 
     @PutMapping("/{id}")

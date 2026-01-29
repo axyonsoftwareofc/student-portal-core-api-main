@@ -1,4 +1,4 @@
-package br.com.student.portal.service.task;
+package br.com.student.portal.service;
 
 import br.com.student.portal.dto.request.TaskRequest;
 import br.com.student.portal.dto.response.TaskResponse;
@@ -6,11 +6,9 @@ import br.com.student.portal.entity.Course;
 import br.com.student.portal.entity.Task;
 import br.com.student.portal.entity.User;
 import br.com.student.portal.entity.enums.TaskStatus;
-import br.com.student.portal.exception.ErrorCode;
-import br.com.student.portal.exception.types.NotFoundException;
+import br.com.student.portal.exception.ObjectNotFoundException;
 import br.com.student.portal.repository.CourseRepository;
 import br.com.student.portal.repository.TaskRepository;
-import br.com.student.portal.repository.TaskSubmissionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,7 +25,6 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final CourseRepository courseRepository;
-    private final TaskSubmissionRepository submissionRepository;
 
     @Transactional(readOnly = true)
     public TaskResponse getTaskById(UUID id) {
@@ -53,16 +50,6 @@ public class TaskService {
     }
 
     @Transactional(readOnly = true)
-    public List<TaskResponse> getUpcomingTasks(int days) {
-        log.debug("Buscando tarefas para os próximos {} dias", days);
-        LocalDateTime start = LocalDateTime.now();
-        LocalDateTime end = start.plusDays(days);
-        return taskRepository.findUpcomingTasks(start, end).stream()
-                .map(this::mapToResponse)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public List<TaskResponse> getOverdueTasks() {
         log.debug("Buscando tarefas atrasadas");
         return taskRepository.findOverdueTasks(LocalDateTime.now()).stream()
@@ -75,10 +62,11 @@ public class TaskService {
         log.info("Criando nova tarefa: {}", request.getTitle());
 
         Course course = courseRepository.findById(request.getCourseId())
-                .orElseThrow(() -> new NotFoundException(ErrorCode.COURSE_NOT_FOUND,
+                .orElseThrow(() -> new ObjectNotFoundException(
                         "Curso não encontrado com ID: " + request.getCourseId()));
 
-        Task task = Task.builder()
+        //TODO:MOVER PARA UM BUILDER
+        var task = Task.builder()
                 .title(request.getTitle())
                 .name(request.getName())
                 .description(request.getDescription())
@@ -88,7 +76,7 @@ public class TaskService {
                 .status(TaskStatus.PENDING)
                 .build();
 
-        Task savedTask = taskRepository.save(task);
+        var savedTask = taskRepository.save(task);
         log.info("Tarefa criada com ID: {}", savedTask.getId());
 
         return mapToResponse(savedTask);
@@ -98,7 +86,7 @@ public class TaskService {
     public TaskResponse updateTask(UUID id, TaskRequest request) {
         log.info("Atualizando tarefa ID: {}", id);
 
-        Task task = findTaskOrThrow(id);
+        var task = findTaskOrThrow(id);
 
         task.setTitle(request.getTitle());
         task.setName(request.getName());
@@ -108,7 +96,7 @@ public class TaskService {
         if (request.getCourseId() != null &&
                 !request.getCourseId().equals(task.getCourse().getId())) {
             Course newCourse = courseRepository.findById(request.getCourseId())
-                    .orElseThrow(() -> new NotFoundException(ErrorCode.COURSE_NOT_FOUND,
+                    .orElseThrow(() -> new ObjectNotFoundException(
                             "Curso não encontrado com ID: " + request.getCourseId()));
             task.setCourse(newCourse);
         }
@@ -127,22 +115,14 @@ public class TaskService {
         log.info("Tarefa deletada: {}", id);
     }
 
-    // ==================== Métodos Privados ====================
-
     private Task findTaskOrThrow(UUID id) {
         return taskRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.TASK_NOT_FOUND,
+                .orElseThrow(() -> new ObjectNotFoundException(
                         "Tarefa não encontrada com ID: " + id));
     }
 
+    //TODO:MOVER ESSA FUNÇÃO PARA UM MAPPER
     private TaskResponse mapToResponse(Task task) {
-        long submissionCount = 0;
-        try {
-            submissionCount = submissionRepository.countByTaskId(task.getId());
-        } catch (Exception e) {
-            log.debug("Não foi possível contar submissões: {}", e.getMessage());
-        }
-
         return TaskResponse.builder()
                 .id(task.getId())
                 .title(task.getTitle())
@@ -155,8 +135,7 @@ public class TaskService {
                 .courseName(task.getCourse().getName())
                 .createdById(task.getCreatedBy() != null ? task.getCreatedBy().getId() : null)
                 .createdByName(task.getCreatedBy() != null ? task.getCreatedBy().getName() : null)
-                .overdue(task.isOverdue())  // ✅ Corrigido: overdue, não isOverdue
-                .submissionCount(submissionCount)
+                .overdue(task.isOverdue())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
                 .build();

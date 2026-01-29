@@ -1,14 +1,11 @@
 package br.com.student.portal.config.security;
 
 import br.com.student.portal.repository.UserRepository;
-import br.com.student.portal.service.auth.TokenService;
+import br.com.student.portal.service.TokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -20,7 +17,6 @@ import java.io.IOException;
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(SecurityFilter.class);
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final TokenService tokenService;
@@ -33,20 +29,15 @@ public class SecurityFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            @NonNull HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
     ) throws ServletException, IOException {
 
-        try {
-            String token = extractToken(request);
+        String token = extractToken(request);
 
-            if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                authenticateUser(token, request);
-            }
-        } catch (Exception e) {
-            logger.debug("Falha na autenticação do token: {}", e.getMessage());
-            // Continua sem autenticação - deixa o Spring Security lidar
+        if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            authenticateUser(token, request);
         }
 
         filterChain.doFilter(request, response);
@@ -62,10 +53,12 @@ public class SecurityFilter extends OncePerRequestFilter {
                         null,
                         user.getAuthorities()
                 );
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                logger.debug("Usuário autenticado: {}", email);
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             });
         }
     }
@@ -83,10 +76,10 @@ public class SecurityFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        // ✅ Skip filter para rotas públicas (otimização)
-        return path.startsWith("/swagger-ui") ||
-                path.startsWith("/v3/api-docs") ||
-                path.equals("/api/auth/login") ||
-                path.equals("/api/auth/register");
+
+        return path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.equals("/api/auth/login")
+                || path.equals("/api/auth/register");
     }
 }
