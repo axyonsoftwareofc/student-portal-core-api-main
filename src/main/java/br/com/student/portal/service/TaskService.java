@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static br.com.student.portal.validation.TaskValidator.validateTaskFields;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -58,23 +60,25 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskResponse createTask(TaskRequest request, User createdBy) {
-        log.info("Criando nova tarefa: {}", request.getTitle());
+    public TaskResponse createTask(TaskRequest taskRequest, User createdBy) {
+        log.info("Criando nova tarefa: {}", taskRequest.getTitle());
 
-        Course course = courseRepository.findById(request.getCourseId())
+        var course = courseRepository.findById(taskRequest.getCourseId())
                 .orElseThrow(() -> new ObjectNotFoundException(
-                        "Curso não encontrado com ID: " + request.getCourseId()));
+                        "Curso não encontrado com ID: " + taskRequest.getCourseId()));
 
         //TODO:MOVER PARA UM BUILDER
         var task = Task.builder()
-                .title(request.getTitle())
-                .name(request.getName())
-                .description(request.getDescription())
-                .deadline(request.getDeadline())
+                .title(taskRequest.getTitle())
+                .name(taskRequest.getName())
+                .description(taskRequest.getDescription())
+                .deadline(taskRequest.getDeadline())
                 .course(course)
                 .createdBy(createdBy)
                 .status(TaskStatus.PENDING)
                 .build();
+
+        validateTaskFields(task);
 
         var savedTask = taskRepository.save(task);
         log.info("Tarefa criada com ID: {}", savedTask.getId());
@@ -83,25 +87,27 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskResponse updateTask(UUID id, TaskRequest request) {
+    public TaskResponse updateTask(UUID id, TaskRequest taskRequest) {
         log.info("Atualizando tarefa ID: {}", id);
 
         var task = findTaskOrThrow(id);
 
-        task.setTitle(request.getTitle());
-        task.setName(request.getName());
-        task.setDescription(request.getDescription());
-        task.setDeadline(request.getDeadline());
+        task.setTitle(taskRequest.getTitle());
+        task.setName(taskRequest.getName());
+        task.setDescription(taskRequest.getDescription());
+        task.setDeadline(taskRequest.getDeadline());
 
-        if (request.getCourseId() != null &&
-                !request.getCourseId().equals(task.getCourse().getId())) {
-            Course newCourse = courseRepository.findById(request.getCourseId())
+        if (taskRequest.getCourseId() != null &&
+                !taskRequest.getCourseId().equals(task.getCourse().getId())) {
+            Course newCourse = courseRepository.findById(taskRequest.getCourseId())
                     .orElseThrow(() -> new ObjectNotFoundException(
-                            "Curso não encontrado com ID: " + request.getCourseId()));
+                            "Curso não encontrado com ID: " + taskRequest.getCourseId()));
             task.setCourse(newCourse);
         }
 
-        Task updatedTask = taskRepository.save(task);
+        validateTaskFields(task);
+
+        var updatedTask = taskRepository.save(task);
         log.info("Tarefa atualizada: {}", updatedTask.getId());
 
         return mapToResponse(updatedTask);

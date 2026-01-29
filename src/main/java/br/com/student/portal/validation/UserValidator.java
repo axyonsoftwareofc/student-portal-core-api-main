@@ -1,7 +1,6 @@
 package br.com.student.portal.validation;
 
 import br.com.student.portal.dto.request.UserRequest;
-import br.com.student.portal.entity.User;
 import org.springframework.stereotype.Component;
 
 import static br.com.student.portal.validation.FieldValidator.*;
@@ -26,12 +25,6 @@ public class UserValidator {
     public static void validateEmail(String email) {
         validateRequiredField(email, EMAIL_FIELD);
         validatePattern(email, EMAIL_FIELD, EMAIL_REGEX, "Formato de email inválido.");
-
-        // TODO: Remover essa restrição se quiser aceitar outros emails
-        // if (!email.endsWith("@gmail.com")) {
-        //     throw new BadRequestException(ErrorCode.INVALID_EMAIL,
-        //             "Apenas contas Gmail são permitidas.");
-        // }
     }
 
     public static void validatePassword(String password) {
@@ -45,23 +38,8 @@ public class UserValidator {
         validateName(userRequest.getName());
         validateEmail(userRequest.getEmail());
 
-        // Senha pode ser opcional em update
         if (isNotEmpty(userRequest.getPassword())) {
             validatePassword(userRequest.getPassword());
         }
-    }
-
-    public static void validateFieldsUserRequestForCreate(UserRequest userRequest) {
-        validateRequiredField(userRequest, "UserRequest");
-        validateName(userRequest.getName());
-        validateEmail(userRequest.getEmail());
-        validatePassword(userRequest.getPassword()); // Obrigatório na criação
-    }
-
-    public static void validateFields(User user) {
-        validateRequiredField(user, "User");
-        validateName(user.getName());
-        validateEmail(user.getEmail());
-        validatePassword(user.getPassword());
     }
 }
