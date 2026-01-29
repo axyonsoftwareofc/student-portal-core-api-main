@@ -50,8 +50,6 @@ public class Task extends BaseEntity {
     @JoinColumn(name = "created_by")
     private User createdBy;
 
-    // ==================== Utility Methods ====================
-
     public boolean isOverdue() {
         return status == TaskStatus.PENDING &&
                 deadline != null &&
