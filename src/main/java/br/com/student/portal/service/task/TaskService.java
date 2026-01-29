@@ -10,6 +10,7 @@ import br.com.student.portal.exception.ErrorCode;
 import br.com.student.portal.exception.types.NotFoundException;
 import br.com.student.portal.repository.CourseRepository;
 import br.com.student.portal.repository.TaskRepository;
+import br.com.student.portal.repository.TaskSubmissionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final CourseRepository courseRepository;
+    private final TaskSubmissionRepository submissionRepository;
 
     @Transactional(readOnly = true)
     public TaskResponse getTaskById(UUID id) {
@@ -134,6 +136,13 @@ public class TaskService {
     }
 
     private TaskResponse mapToResponse(Task task) {
+        long submissionCount = 0;
+        try {
+            submissionCount = submissionRepository.countByTaskId(task.getId());
+        } catch (Exception e) {
+            log.debug("Não foi possível contar submissões: {}", e.getMessage());
+        }
+
         return TaskResponse.builder()
                 .id(task.getId())
                 .title(task.getTitle())
@@ -146,7 +155,8 @@ public class TaskService {
                 .courseName(task.getCourse().getName())
                 .createdById(task.getCreatedBy() != null ? task.getCreatedBy().getId() : null)
                 .createdByName(task.getCreatedBy() != null ? task.getCreatedBy().getName() : null)
-                .isOverdue(task.isOverdue())
+                .overdue(task.isOverdue())  // ✅ Corrigido: overdue, não isOverdue
+                .submissionCount(submissionCount)
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
                 .build();

@@ -59,9 +59,7 @@ public class QuestionController {
             Authentication authentication) {
 
         User author = (User) authentication.getPrincipal();
-        request.setUser(author);
-
-        QuestionResponse response = questionService.createQuestion(request);
+        QuestionResponse response = questionService.createQuestion(request, author);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -73,9 +71,7 @@ public class QuestionController {
             Authentication authentication) {
 
         User requester = (User) authentication.getPrincipal();
-        request.setUser(requester);
-
-        QuestionResponse response = questionService.updateQuestion(id, request);
+        QuestionResponse response = questionService.updateQuestion(id, request, requester);
         return ResponseEntity.ok(response);
     }
 
@@ -85,8 +81,8 @@ public class QuestionController {
             @PathVariable UUID id,
             Authentication authentication) {
 
-        // TODO: Adicionar validação de permissão no service
-        questionService.deleteQuestion(id);
+        User requester = (User) authentication.getPrincipal();
+        questionService.deleteQuestion(id, requester);
         return ResponseEntity.noContent().build();
     }
 }

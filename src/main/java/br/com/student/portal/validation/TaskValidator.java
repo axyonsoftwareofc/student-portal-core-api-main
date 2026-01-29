@@ -1,5 +1,6 @@
 package br.com.student.portal.validation;
 
+import br.com.student.portal.entity.Course;
 import br.com.student.portal.entity.Task;
 import br.com.student.portal.exception.ErrorCode;
 import br.com.student.portal.exception.types.BadRequestException;
@@ -47,14 +48,17 @@ public class TaskValidator {
         }
     }
 
-    public static void validateCourse(String course) {
-        validateRequiredField(course, COURSE_FIELD);
-        if (course.trim().isEmpty()) {
-            throw new BadRequestException(ErrorCode.FIELD_REQUIRED, COURSE_FIELD + " não pode estar vazio.");
+    public static void validateCourse(Course course) {
+        if (course == null) {
+            throw new BadRequestException(ErrorCode.FIELD_REQUIRED, COURSE_FIELD + " é obrigatório.");
+        }
+        if (course.getId() == null) {
+            throw new BadRequestException(ErrorCode.FIELD_REQUIRED, COURSE_FIELD + " deve ter um ID válido.");
         }
     }
 
     public static void validateTaskFields(Task task) {
+        validateRequiredField(task, "Task");
         validateName(task.getName());
         validateDeadLine(task.getDeadline());
         validateDescription(task.getDescription());
