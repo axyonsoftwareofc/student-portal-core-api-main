@@ -58,20 +58,6 @@ public class CourseController {
         return ResponseEntity.ok(courseService.updateCourse(id, request));
     }
 
-    @PatchMapping("/{id}/activate")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Ativa um curso")
-    public ResponseEntity<CourseResponse> activateCourse(@PathVariable UUID id) {
-        return ResponseEntity.ok(courseService.activateCourse(id));
-    }
-
-    @PatchMapping("/{id}/complete")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Marca curso como concluído")
-    public ResponseEntity<CourseResponse> completeCourse(@PathVariable UUID id) {
-        return ResponseEntity.ok(courseService.completeCourse(id));
-    }
-
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Remove um curso")

@@ -43,13 +43,6 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getTasksByCourse(courseId));
     }
 
-    @GetMapping("/upcoming")
-    @Operation(summary = "Lista tarefas com prazo próximo")
-    public ResponseEntity<List<TaskResponse>> getUpcomingTasks(
-            @RequestParam(defaultValue = "7") int days) {
-        return ResponseEntity.ok(taskService.getUpcomingTasks(days));
-    }
-
     @GetMapping("/overdue")
     @Operation(summary = "Lista tarefas atrasadas")
     public ResponseEntity<List<TaskResponse>> getOverdueTasks() {
