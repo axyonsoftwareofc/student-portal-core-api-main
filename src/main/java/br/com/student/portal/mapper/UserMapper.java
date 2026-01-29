@@ -6,51 +6,35 @@ import br.com.student.portal.entity.User;
 import br.com.student.portal.entity.enums.UserRole;
 import org.springframework.stereotype.Component;
 
-/**
- * Mapper para converter entre User e DTOs
- */
 @Component
 public class UserMapper {
 
-    /**
-     * Converte UserRequest para User
-     * Método compatível com nome antigo: userRequestIntoUser
-     */
     public User toEntity(UserRequest request) {
-        if (request == null) {
-            return null;
-        }
+        if (request == null) return null;
 
-        return new User(
-                request.getName(),
-                request.getEmail(),
-                request.getPassword(),
-                request.getRegistration(),
-                UserRole.fromString(request.getRole() != null ? request.getRole() : "STUDENT")
-        );
+        return User.builder()
+                .name(request.getName())
+                .email(request.getEmail())
+                .password(request.getPassword())
+                .registration(request.getRegistration())
+                .role(parseRole(request.getRole()))
+                .accessEnable(true)
+                .build();
     }
 
-    /**
-     * Alias para compatibilidade - userRequestIntoUser
-     */
     public User userRequestIntoUser(UserRequest request) {
         return toEntity(request);
     }
 
-    /**
-     * Converte User para UserResponse
-     * Método compatível com nome antigo: userIntoUserResponse
-     */
     public UserResponse toResponse(User user) {
-        if (user == null) {
-            return null;
-        }
+        if (user == null) return null;
 
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
-                .role(user.getRole().getValue())
+                .role(user.getRole().name())
+                .roleDisplayName(user.getRole().getDisplayName())
                 .registration(user.getRegistration())
                 .accessEnable(user.getAccessEnable())
                 .createdAt(user.getCreatedAt())
@@ -58,35 +42,35 @@ public class UserMapper {
                 .build();
     }
 
-    /**
-     * Alias para compatibilidade - userIntoUserResponse
-     */
     public UserResponse userIntoUserResponse(User user) {
         return toResponse(user);
     }
 
-    /**
-     * Atualiza um User existente com dados de UserRequest
-     */
-    public void updateUserFromRequest(UserRequest request, User user) {
-        if (request == null || user == null) {
-            return;
-        }
+    public void updateEntityFromRequest(UserRequest request, User user) {
+        if (request == null || user == null) return;
 
-        if (request.getName() != null) {
+        if (request.getName() != null && !request.getName().isBlank()) {
             user.setName(request.getName());
         }
-        if (request.getEmail() != null) {
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
             user.setEmail(request.getEmail());
-        }
-        if (request.getPassword() != null) {
-            user.setPassword(request.getPassword());
-        }
-        if (request.getRole() != null) {
-            user.setRole(UserRole.fromString(request.getRole()));
         }
         if (request.getRegistration() != null) {
             user.setRegistration(request.getRegistration());
+        }
+        if (request.getRole() != null && !request.getRole().isBlank()) {
+            user.setRole(parseRole(request.getRole()));
+        }
+    }
+
+    private UserRole parseRole(String role) {
+        if (role == null || role.isBlank()) {
+            return UserRole.STUDENT;
+        }
+        try {
+            return UserRole.valueOf(role.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return UserRole.STUDENT;
         }
     }
 }

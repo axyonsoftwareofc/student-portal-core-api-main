@@ -4,9 +4,6 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- ===================================
-         PARENT - Spring Boot
-    =================================== -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -14,21 +11,19 @@
         <relativePath/>
     </parent>
 
-    <!-- ===================================
-         PROJECT INFO
-    =================================== -->
-    <groupId>br.com.code.plus.project</groupId>
-    <artifactId>StudentPortal</artifactId>
+    <groupId>br.com.student.portal</groupId>
+    <artifactId>student-portal</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>StudentPortal</name>
     <description>Student Portal API</description>
 
     <properties>
         <java.version>17</java.version>
+        <java-jwt.version>4.4.0</java-jwt.version>
+        <springdoc.version>2.6.0</springdoc.version>
     </properties>
 
     <dependencies>
-
         <!-- ===================================
              SPRING BOOT CORE
         =================================== -->
@@ -50,7 +45,7 @@
         </dependency>
 
         <!-- ===================================
-             DATABASE - JPA & PostgreSQL
+             DATABASE
         =================================== -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -63,15 +58,14 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2 para testes locais -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>runtime</scope>
+            <scope>test</scope> <!-- ✅ Mudado para test only -->
         </dependency>
 
         <!-- ===================================
-             DATABASE - FLYWAY MIGRATIONS
+             FLYWAY
         =================================== -->
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -94,31 +88,16 @@
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>4.4.0</version>
+            <version>${java-jwt.version}</version>
         </dependency>
 
         <!-- ===================================
-             VALIDATION
-        =================================== -->
-        <dependency>
-            <groupId>org.hibernate.validator</groupId>
-            <artifactId>hibernate-validator</artifactId>
-            <version>8.0.0.Final</version>
-        </dependency>
-
-        <!-- ===================================
-             DOCUMENTATION - OpenAPI/Swagger
+             DOCUMENTATION
         =================================== -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.2.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.swagger.core.v3</groupId>
-            <artifactId>swagger-models-jakarta</artifactId>
-            <version>2.2.9</version>
+            <version>${springdoc.version}</version>
         </dependency>
 
         <!-- ===================================
@@ -144,39 +123,8 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>3.24.2</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>5.5.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.5.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
-    <!-- ===================================
-         BUILD
-    =================================== -->
     <build>
         <plugins>
             <plugin>
@@ -193,5 +141,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

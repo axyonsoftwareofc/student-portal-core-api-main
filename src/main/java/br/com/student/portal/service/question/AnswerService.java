@@ -17,32 +17,44 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AnswerService {
 
     private final AnswerRepository answerRepository;
     private final QuestionRepository questionRepository;
 
+    @Transactional(readOnly = true)
     public AnswerResponse getAnswerById(UUID id) {
         log.debug("Buscando resposta por ID: {}", id);
-        Answer answer = findAnswerById(id);
+        Answer answer = findAnswerOrThrow(id);
         return mapToResponse(answer);
     }
 
     @Transactional(readOnly = true)
     public List<AnswerResponse> getAnswersByQuestionId(UUID questionId) {
         log.debug("Buscando respostas da pergunta: {}", questionId);
-        return answerRepository.findByQuestionId(questionId)
-                .stream()
+        return answerRepository.findByQuestionId(questionId).stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<AnswerResponse> getAnswersByAuthor(UUID authorId) {
+        log.debug("Buscando respostas do autor: {}", authorId);
+        return answerRepository.findByAuthorId(authorId).stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long countAnswersByQuestionId(UUID questionId) {
+        return answerRepository.countByQuestionId(questionId);
+    }
+
+    @Transactional
     public AnswerResponse createAnswer(AnswerRequest request, UUID questionId, User author) {
         log.info("Criando resposta para pergunta: {}", questionId);
 
@@ -54,35 +66,36 @@ public class AnswerService {
                 .content(request.getContent())
                 .author(author)
                 .question(question)
+                .accepted(false)
                 .build();
 
         Answer savedAnswer = answerRepository.save(answer);
 
-        // Incrementar contador de respostas
-        question.incrementAnswerCount();
-        questionRepository.save(question);
-
+        // O trigger no banco atualiza automaticamente o answer_count
         log.info("Resposta criada com ID: {}", savedAnswer.getId());
+
         return mapToResponse(savedAnswer);
     }
 
+    @Transactional
     public AnswerResponse updateAnswer(UUID id, AnswerRequest request, User requester) {
         log.info("Atualizando resposta ID: {}", id);
 
-        Answer existingAnswer = findAnswerById(id);
-        validateAuthorPermission(existingAnswer, requester, "editar");
+        Answer answer = findAnswerOrThrow(id);
+        validateAuthorPermission(answer, requester);
 
-        existingAnswer.setContent(request.getContent());
-        Answer updatedAnswer = answerRepository.save(existingAnswer);
+        answer.setContent(request.getContent());
+        Answer updatedAnswer = answerRepository.save(answer);
 
         log.info("Resposta atualizada: {}", updatedAnswer.getId());
         return mapToResponse(updatedAnswer);
     }
 
+    @Transactional
     public void deleteAnswer(UUID id, User requester) {
         log.info("Deletando resposta ID: {}", id);
 
-        Answer answer = findAnswerById(id);
+        Answer answer = findAnswerOrThrow(id);
 
         boolean isAuthor = answer.getAuthor().getId().equals(requester.getId());
         boolean isAdmin = requester.isAdmin();
@@ -92,53 +105,56 @@ public class AnswerService {
                     "Você não tem permissão para deletar esta resposta.");
         }
 
-        // Decrementar contador de respostas
-        Question question = answer.getQuestion();
-        question.decrementAnswerCount();
-        questionRepository.save(question);
-
+        // O trigger no banco atualiza automaticamente o answer_count
         answerRepository.delete(answer);
         log.info("Resposta deletada: {}", id);
     }
 
-    @Transactional(readOnly = true)
-    public long countAnswersByQuestionId(UUID questionId) {
-        return answerRepository.countByQuestionId(questionId);
+    @Transactional
+    public AnswerResponse acceptAnswer(UUID id, User requester) {
+        log.info("Aceitando resposta ID: {}", id);
+
+        Answer answer = findAnswerOrThrow(id);
+        Question question = answer.getQuestion();
+
+        // Apenas o autor da pergunta pode aceitar
+        if (!question.getAuthor().getId().equals(requester.getId())) {
+            throw new ForbiddenException(ErrorCode.FORBIDDEN,
+                    "Apenas o autor da pergunta pode aceitar uma resposta.");
+        }
+
+        answer.accept();
+        Answer updatedAnswer = answerRepository.save(answer);
+
+        log.info("Resposta aceita: {}", id);
+        return mapToResponse(updatedAnswer);
     }
 
-    @Transactional(readOnly = true)
-    public List<AnswerResponse> getAnswersByAuthor(UUID authorId) {
-        log.debug("Buscando respostas do autor: {}", authorId);
-        return answerRepository.findByAuthorId(authorId)
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
+    // ==================== Métodos Privados ====================
 
-    // ==================== MÉTODOS AUXILIARES ====================
-
-    private Answer findAnswerById(UUID id) {
+    private Answer findAnswerOrThrow(UUID id) {
         return answerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND,
                         "Resposta não encontrada com ID: " + id));
     }
 
-    private void validateAuthorPermission(Answer answer, User requester, String action) {
+    private void validateAuthorPermission(Answer answer, User requester) {
         if (!answer.getAuthor().getId().equals(requester.getId())) {
             throw new ForbiddenException(ErrorCode.FORBIDDEN,
-                    "Apenas o autor pode " + action + " esta resposta.");
+                    "Apenas o autor pode editar esta resposta.");
         }
     }
 
-    private AnswerResponse mapToResponse(Answer entity) {
+    private AnswerResponse mapToResponse(Answer answer) {
         return AnswerResponse.builder()
-                .id(entity.getId().toString())
-                .questionId(entity.getQuestion().getId().toString())
-                .authorId(entity.getAuthor().getId().toString())
-                .authorName(entity.getAuthor().getName())
-                .content(entity.getContent())
-                .createdAt(entity.getCreatedAt() != null ? entity.getCreatedAt().toString() : "")
-                .updatedAt(entity.getUpdatedAt() != null ? entity.getUpdatedAt().toString() : "")
+                .id(answer.getId())
+                .questionId(answer.getQuestion().getId())
+                .authorId(answer.getAuthor().getId())
+                .authorName(answer.getAuthor().getName())
+                .content(answer.getContent())
+                .accepted(answer.isAccepted())
+                .createdAt(answer.getCreatedAt())
+                .updatedAt(answer.getUpdatedAt())
                 .build();
     }
 }

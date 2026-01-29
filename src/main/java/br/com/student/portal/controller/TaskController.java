@@ -1,49 +1,88 @@
 package br.com.student.portal.controller;
 
-import br.com.student.portal.entity.Task;
+import br.com.student.portal.dto.request.TaskRequest;
+import br.com.student.portal.dto.response.TaskResponse;
+import br.com.student.portal.entity.User;
 import br.com.student.portal.service.task.TaskService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/tasks")
+@RequiredArgsConstructor
+@Tag(name = "Tarefas", description = "Gerenciamento de tarefas")
 public class TaskController {
 
     private final TaskService taskService;
 
     @GetMapping
-    public ResponseEntity<List<Task>> getAllTasks() {
+    @Operation(summary = "Lista todas as tarefas")
+    public ResponseEntity<List<TaskResponse>> getAllTasks() {
         return ResponseEntity.ok(taskService.getAllTasks());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Task> findTaskById(@PathVariable UUID id) {
-        // Agora retorna Task diretamente (não Optional)
-        var task = taskService.findTaskById(id);
-        return ResponseEntity.ok(task);
+    @Operation(summary = "Busca tarefa por ID")
+    public ResponseEntity<TaskResponse> getTaskById(@PathVariable UUID id) {
+        return ResponseEntity.ok(taskService.getTaskById(id));
+    }
+
+    @GetMapping("/course/{courseId}")
+    @Operation(summary = "Lista tarefas de um curso")
+    public ResponseEntity<List<TaskResponse>> getTasksByCourse(@PathVariable UUID courseId) {
+        return ResponseEntity.ok(taskService.getTasksByCourse(courseId));
+    }
+
+    @GetMapping("/upcoming")
+    @Operation(summary = "Lista tarefas com prazo próximo")
+    public ResponseEntity<List<TaskResponse>> getUpcomingTasks(
+            @RequestParam(defaultValue = "7") int days) {
+        return ResponseEntity.ok(taskService.getUpcomingTasks(days));
+    }
+
+    @GetMapping("/overdue")
+    @Operation(summary = "Lista tarefas atrasadas")
+    public ResponseEntity<List<TaskResponse>> getOverdueTasks() {
+        return ResponseEntity.ok(taskService.getOverdueTasks());
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody Task task) {
-        var createdTask = taskService.createTask(task);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @Operation(summary = "Cria uma nova tarefa")
+    public ResponseEntity<TaskResponse> createTask(
+            @Valid @RequestBody TaskRequest request,
+            Authentication authentication) {
+
+        User createdBy = (User) authentication.getPrincipal();
+        TaskResponse response = taskService.createTask(request, createdBy);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable UUID id, @RequestBody Task task) {
-        var updatedTask = taskService.updateTask(id, task);
-        return ResponseEntity.ok(updatedTask);
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @Operation(summary = "Atualiza uma tarefa")
+    public ResponseEntity<TaskResponse> updateTask(
+            @PathVariable UUID id,
+            @Valid @RequestBody TaskRequest request) {
+
+        TaskResponse response = taskService.updateTask(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @Operation(summary = "Remove uma tarefa")
     public ResponseEntity<Void> deleteTask(@PathVariable UUID id) {
-        // Método renomeado de taskDelete para deleteTask
         taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
     }

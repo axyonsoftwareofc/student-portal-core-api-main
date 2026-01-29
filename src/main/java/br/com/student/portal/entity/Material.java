@@ -1,91 +1,82 @@
 package br.com.student.portal.entity;
 
+import br.com.student.portal.entity.base.BaseEntity;
 import br.com.student.portal.entity.enums.MaterialCategory;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Entidade Material
- * Representa materiais de estudo (PDFs, vídeos, artigos, etc)
- * Consolidação de MaterialEntity e FileEntity
- */
 @Entity
-@Table(name = "materials")
-@Data
+@Table(name = "materials", indexes = {
+        @Index(name = "idx_materials_user_id", columnList = "user_id"),
+        @Index(name = "idx_materials_category", columnList = "category"),
+        @Index(name = "idx_materials_created_at", columnList = "created_at")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Material {
+public class Material extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private MaterialCategory category;
+    @Column(nullable = false, length = 20)
+    private MaterialCategory category = MaterialCategory.OTHER;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String filename;
+
+    @Column(name = "file_size")
+    private Long fileSize;
+
+    @Column(name = "content_type")
+    private String contentType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User uploadedBy;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "upload_date", nullable = false, updatable = false)
     private LocalDateTime uploadDate;
 
     @Builder.Default
     @Column(nullable = false)
     private Long downloads = 0L;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id")
+    private Course course;
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
-
-    /**
-     * Prepopulate timestamps antes de salvar
-     */
-    @PrePersist
+    @Override
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        uploadDate = LocalDateTime.now();
-        if (downloads == null) {
-            downloads = 0L;
-        }
-        if (category == null) {
-            category = MaterialCategory.OTHER;
-        }
+        super.onCreate();
+        this.uploadDate = LocalDateTime.now();
+        if (this.downloads == null) this.downloads = 0L;
+        if (this.category == null) this.category = MaterialCategory.OTHER;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    // ==================== Utility Methods ====================
 
-    /**
-     * Incrementar contador de downloads
-     */
     public void incrementDownloads() {
-        if (this.downloads == null) {
-            this.downloads = 1L;
-        } else {
-            this.downloads++;
+        this.downloads = (this.downloads == null ? 0L : this.downloads) + 1;
+    }
+
+    public void autoDetectCategory() {
+        if (this.filename != null) {
+            this.category = MaterialCategory.fromFilename(this.filename);
         }
     }
 }

@@ -1,38 +1,36 @@
 package br.com.student.portal.entity.enums;
 
-/**
- * Define os papéis/roles disponíveis no sistema
- *
- * SUPER_USER: Acesso total ao sistema
- * ADMIN: Gerencia usuários e conteúdo
- * TEACHER: Cria e gerencia materiais e questões
- * STUDENT: Acessa conteúdo e responde questões
- */
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
 public enum UserRole {
-    SUPER_USER("SUPER_USER"),
-    ADMIN("ADMIN"),
-    TEACHER("TEACHER"),
-    STUDENT("STUDENT");
+    SUPER_USER("Super Usuário", "Acesso total ao sistema", 0),
+    ADMIN("Administrador", "Gerencia usuários e conteúdo", 1),
+    TEACHER("Professor", "Cria e gerencia materiais e questões", 2),
+    STUDENT("Estudante", "Acessa conteúdo e responde questões", 3);
 
-    private final String value;
-
-    UserRole(String value) {
-        this.value = value;
-    }
-
-    public String getValue() {
-        return value;
-    }
+    private final String displayName;
+    private final String description;
+    private final int hierarchyLevel;
 
     /**
-     * Obtém o enum a partir de uma String
+     * Verifica se este role tem permissão igual ou superior a outro.
      */
-    public static UserRole fromString(String value) {
-        for (UserRole role : UserRole.values()) {
-            if (role.value.equalsIgnoreCase(value)) {
-                return role;
-            }
-        }
-        return STUDENT; // Default
+    public boolean hasPermissionOver(UserRole other) {
+        return this.hierarchyLevel <= other.hierarchyLevel;
+    }
+
+    public boolean isAdmin() {
+        return this == SUPER_USER || this == ADMIN;
+    }
+
+    public boolean isTeacher() {
+        return this == TEACHER || isAdmin();
+    }
+
+    public boolean isStudent() {
+        return this == STUDENT;
     }
 }

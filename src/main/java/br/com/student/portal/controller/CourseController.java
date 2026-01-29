@@ -1,0 +1,94 @@
+package br.com.student.portal.controller;
+
+import br.com.student.portal.dto.request.CourseRequest;
+import br.com.student.portal.dto.response.CourseResponse;
+import br.com.student.portal.service.course.CourseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/courses")
+@RequiredArgsConstructor
+@Tag(name = "Cursos", description = "Gerenciamento de cursos")
+public class CourseController {
+
+    private final CourseService courseService;
+
+    @GetMapping
+    @Operation(summary = "Lista todos os cursos")
+    public ResponseEntity<List<CourseResponse>> getAllCourses() {
+        return ResponseEntity.ok(courseService.getAllCourses());
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Busca curso por ID")
+    public ResponseEntity<CourseResponse> getCourseById(@PathVariable UUID id) {
+        return ResponseEntity.ok(courseService.getCourseById(id));
+    }
+
+    @GetMapping("/active")
+    @Operation(summary = "Lista cursos ativos")
+    public ResponseEntity<List<CourseResponse>> getActiveCourses() {
+        return ResponseEntity.ok(courseService.getActiveCourses());
+    }
+
+    @GetMapping("/enrollable")
+    @Operation(summary = "Lista cursos disponíveis para matrícula")
+    public ResponseEntity<List<CourseResponse>> getEnrollableCourses() {
+        return ResponseEntity.ok(courseService.getEnrollableCourses());
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Busca cursos por termo")
+    public ResponseEntity<List<CourseResponse>> searchCourses(@RequestParam String term) {
+        return ResponseEntity.ok(courseService.searchCourses(term));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Cria um novo curso")
+    public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
+        CourseResponse response = courseService.createCourse(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Atualiza um curso")
+    public ResponseEntity<CourseResponse> updateCourse(
+            @PathVariable UUID id,
+            @Valid @RequestBody CourseRequest request) {
+        return ResponseEntity.ok(courseService.updateCourse(id, request));
+    }
+
+    @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Ativa um curso")
+    public ResponseEntity<CourseResponse> activateCourse(@PathVariable UUID id) {
+        return ResponseEntity.ok(courseService.activateCourse(id));
+    }
+
+    @PatchMapping("/{id}/complete")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Marca curso como concluído")
+    public ResponseEntity<CourseResponse> completeCourse(@PathVariable UUID id) {
+        return ResponseEntity.ok(courseService.completeCourse(id));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Remove um curso")
+    public ResponseEntity<Void> deleteCourse(@PathVariable UUID id) {
+        courseService.deleteCourse(id);
+        return ResponseEntity.noContent().build();
+    }
+}

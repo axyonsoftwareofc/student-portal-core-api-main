@@ -3,6 +3,7 @@ package br.com.student.portal.exception.handler;
 import br.com.student.portal.exception.ErrorCode;
 import br.com.student.portal.exception.base.BaseException;
 import br.com.student.portal.exception.dto.ApiError;
+import br.com.student.portal.exception.types.ForbiddenException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.time.LocalDateTime;
@@ -50,6 +52,29 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getHttpStatus()).body(error);
     }
 
+    /**
+     * Handler específico para ForbiddenException customizada
+     */
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiError> handleForbiddenException(
+            ForbiddenException ex, HttpServletRequest request) {
+
+        log.warn("Forbidden access: {} - {} on path {}",
+                ex.getErrorCode().getCode(), ex.getMessage(), request.getRequestURI());
+
+        ApiError error = ApiError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error(HttpStatus.FORBIDDEN.getReasonPhrase())
+                .code(ex.getErrorCode().getCode())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .details(ex.getDetails().isEmpty() ? null : ex.getDetails())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
     // ==================== VALIDATION EXCEPTIONS ====================
 
     /**
@@ -62,11 +87,10 @@ public class GlobalExceptionHandler {
         log.warn("Validation error on request to {}", request.getRequestURI());
 
         var fieldErrors = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> ApiError.FieldError.builder()
-                        .field(error.getField())
-                        .message(error.getDefaultMessage())
-                        .rejectedValue(error.getRejectedValue())
-                        .build())
+                .map(error -> ApiError.FieldError.of(
+                        error.getField(),
+                        error.getDefaultMessage(),
+                        error.getRejectedValue()))
                 .collect(Collectors.toList());
 
         ApiError error = ApiError.builder()
@@ -148,6 +172,29 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
+    // ==================== FILE UPLOAD EXCEPTIONS ====================
+
+    /**
+     * Arquivo muito grande
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleMaxUploadSizeExceeded(
+            MaxUploadSizeExceededException ex, HttpServletRequest request) {
+
+        log.warn("File too large on upload to {}", request.getRequestURI());
+
+        ApiError error = ApiError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.PAYLOAD_TOO_LARGE.value())
+                .error(HttpStatus.PAYLOAD_TOO_LARGE.getReasonPhrase())
+                .code(ErrorCode.FILE_TOO_LARGE.getCode())
+                .message("O arquivo enviado excede o tamanho máximo permitido")
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(error);
+    }
+
     // ==================== SECURITY EXCEPTIONS ====================
 
     /**
@@ -193,7 +240,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Acesso negado
+     * Acesso negado (Spring Security)
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(
@@ -225,20 +272,23 @@ public class GlobalExceptionHandler {
         log.error("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
 
         String message = "Erro de integridade de dados";
+        ErrorCode errorCode = ErrorCode.RESOURCE_ALREADY_EXISTS;
 
         // Detectar tipo de violação
         String rootMessage = ex.getMostSpecificCause().getMessage().toLowerCase();
         if (rootMessage.contains("unique") || rootMessage.contains("duplicate")) {
             message = "Registro duplicado. Este valor já existe no sistema.";
+            errorCode = ErrorCode.DUPLICATE_ENTRY;
         } else if (rootMessage.contains("foreign key") || rootMessage.contains("fk_")) {
             message = "Não é possível realizar esta operação. Existem registros dependentes.";
+            errorCode = ErrorCode.CANNOT_DELETE_WITH_DEPENDENCIES;
         }
 
         ApiError error = ApiError.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.CONFLICT.value())
                 .error(HttpStatus.CONFLICT.getReasonPhrase())
-                .code(ErrorCode.RESOURCE_ALREADY_EXISTS.getCode())
+                .code(errorCode.getCode())
                 .message(message)
                 .path(request.getRequestURI())
                 .build();
