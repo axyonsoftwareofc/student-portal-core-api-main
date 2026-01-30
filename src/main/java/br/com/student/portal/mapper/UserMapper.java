@@ -2,17 +2,17 @@ package br.com.student.portal.mapper;
 
 import br.com.student.portal.dto.request.UserRequest;
 import br.com.student.portal.dto.response.UserResponse;
-import br.com.student.portal.entity.User;
+import br.com.student.portal.entity.UserEntity;
 import br.com.student.portal.entity.enums.UserRole;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UserMapper {
 
-    public User toEntity(UserRequest request) {
+    public UserEntity toEntity(UserRequest request) {
         if (request == null) return null;
 
-        return User.builder()
+        return UserEntity.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(request.getPassword())
@@ -22,28 +22,28 @@ public class UserMapper {
                 .build();
     }
 
-    public User userRequestIntoUser(UserRequest request) {
+    public UserEntity userRequestIntoUser(UserRequest request) {
         return toEntity(request);
     }
 
-    public UserResponse toResponse(User user) {
-        if (user == null) return null;
+    public UserResponse toResponse(UserEntity userEntity) {
+        if (userEntity == null) return null;
 
         return UserResponse.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .roleDisplayName(user.getRole().getDisplayName())
-                .registration(user.getRegistration())
-                .accessEnable(user.getAccessEnable())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
+                .id(userEntity.getId())
+                .name(userEntity.getName())
+                .email(userEntity.getEmail())
+                .role(userEntity.getRole().name())
+                .roleDisplayName(userEntity.getRole().getDisplayName())
+                .registration(userEntity.getRegistration())
+                .accessEnable(userEntity.getAccessEnable())
+                .createdAt(userEntity.getCreatedAt())
+                .updatedAt(userEntity.getUpdatedAt())
                 .build();
     }
 
-    public UserResponse userIntoUserResponse(User user) {
-        return toResponse(user);
+    public UserResponse userIntoUserResponse(UserEntity userEntity) {
+        return toResponse(userEntity);
     }
 
     private UserRole parseRole(String role) {

@@ -30,6 +30,13 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Cria um usuário")
+    public ResponseEntity<UserResponse> createUser(@RequestBody UserRequest userRequest){
+        return ResponseEntity.status(201).body(userService.createUser(userRequest));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Busca usuário por ID")
     public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
@@ -40,14 +47,6 @@ public class UserController {
     @Operation(summary = "Busca usuário por matrícula")
     public ResponseEntity<UserResponse> getUserByRegistration(@PathVariable String registration) {
         return ResponseEntity.ok(userService.getUserByRegistration(registration));
-    }
-
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Cria um novo usuário")
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest request) {
-        UserResponse response = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")

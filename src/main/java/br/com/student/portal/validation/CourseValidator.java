@@ -1,7 +1,7 @@
 package br.com.student.portal.validation;
 
 import br.com.student.portal.dto.request.CourseRequest;
-import br.com.student.portal.entity.Course;
+import br.com.student.portal.entity.CourseEntity;
 import br.com.student.portal.exception.BadRequestException;
 import org.springframework.stereotype.Component;
 
@@ -45,10 +45,10 @@ public class CourseValidator {
         validateDates(request.getStartDate(), request.getEndDate());
     }
 
-    public static void validateCourse(Course course) {
-        validateRequiredField(course, "Course");
-        validateName(course.getName());
-        validateDescription(course.getDescription());
-        validateDates(course.getStartDate(), course.getEndDate());
+    public static void validateCourse(CourseEntity courseEntity) {
+        validateRequiredField(courseEntity, "Course");
+        validateName(courseEntity.getName());
+        validateDescription(courseEntity.getDescription());
+        validateDates(courseEntity.getStartDate(), courseEntity.getEndDate());
     }
 }

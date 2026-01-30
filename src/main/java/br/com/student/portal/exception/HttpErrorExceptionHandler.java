@@ -27,7 +27,7 @@ public class HttpErrorExceptionHandler {
     }
 
     private ResponseEntity<ApiError> buildErrorResponse(HttpStatus status, String message) {
-        var error = new ApiError(status.value(), message, now().toEpochMilli());
-        return ResponseEntity.status(status).body(error);
+        return ResponseEntity.status(status)
+                .body(new ApiError(status.value(), message, now().toEpochMilli()));
     }
 }

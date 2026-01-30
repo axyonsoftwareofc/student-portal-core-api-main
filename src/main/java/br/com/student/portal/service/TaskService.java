@@ -2,9 +2,9 @@ package br.com.student.portal.service;
 
 import br.com.student.portal.dto.request.TaskRequest;
 import br.com.student.portal.dto.response.TaskResponse;
-import br.com.student.portal.entity.Course;
-import br.com.student.portal.entity.Task;
-import br.com.student.portal.entity.User;
+import br.com.student.portal.entity.CourseEntity;
+import br.com.student.portal.entity.TaskEntity;
+import br.com.student.portal.entity.UserEntity;
 import br.com.student.portal.entity.enums.TaskStatus;
 import br.com.student.portal.exception.ObjectNotFoundException;
 import br.com.student.portal.repository.CourseRepository;
@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,8 +30,8 @@ public class TaskService {
     @Transactional(readOnly = true)
     public TaskResponse getTaskById(UUID id) {
         log.debug("Buscando tarefa por ID: {}", id);
-        Task task = findTaskOrThrow(id);
-        return mapToResponse(task);
+        TaskEntity taskEntity = findTaskOrThrow(id);
+        return mapToResponse(taskEntity);
     }
 
     @Transactional(readOnly = true)
@@ -51,16 +50,8 @@ public class TaskService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<TaskResponse> getOverdueTasks() {
-        log.debug("Buscando tarefas atrasadas");
-        return taskRepository.findOverdueTasks(LocalDateTime.now()).stream()
-                .map(this::mapToResponse)
-                .toList();
-    }
-
     @Transactional
-    public TaskResponse createTask(TaskRequest taskRequest, User createdBy) {
+    public TaskResponse createTask(TaskRequest taskRequest, UserEntity createdBy) {
         log.info("Criando nova tarefa: {}", taskRequest.getTitle());
 
         var course = courseRepository.findById(taskRequest.getCourseId())
@@ -68,12 +59,12 @@ public class TaskService {
                         "Curso não encontrado com ID: " + taskRequest.getCourseId()));
 
         //TODO:MOVER PARA UM BUILDER
-        var task = Task.builder()
+        var task = TaskEntity.builder()
                 .title(taskRequest.getTitle())
                 .name(taskRequest.getName())
                 .description(taskRequest.getDescription())
                 .deadline(taskRequest.getDeadline())
-                .course(course)
+                .courseEntity(course)
                 .createdBy(createdBy)
                 .status(TaskStatus.PENDING)
                 .build();
@@ -98,11 +89,11 @@ public class TaskService {
         task.setDeadline(taskRequest.getDeadline());
 
         if (taskRequest.getCourseId() != null &&
-                !taskRequest.getCourseId().equals(task.getCourse().getId())) {
-            Course newCourse = courseRepository.findById(taskRequest.getCourseId())
+                !taskRequest.getCourseId().equals(task.getCourseEntity().getId())) {
+            CourseEntity newCourseEntity = courseRepository.findById(taskRequest.getCourseId())
                     .orElseThrow(() -> new ObjectNotFoundException(
                             "Curso não encontrado com ID: " + taskRequest.getCourseId()));
-            task.setCourse(newCourse);
+            task.setCourseEntity(newCourseEntity);
         }
 
         validateTaskFields(task);
@@ -116,34 +107,34 @@ public class TaskService {
     @Transactional
     public void deleteTask(UUID id) {
         log.info("Deletando tarefa ID: {}", id);
-        Task task = findTaskOrThrow(id);
-        taskRepository.delete(task);
+        TaskEntity taskEntity = findTaskOrThrow(id);
+        taskRepository.delete(taskEntity);
         log.info("Tarefa deletada: {}", id);
     }
 
-    private Task findTaskOrThrow(UUID id) {
+    private TaskEntity findTaskOrThrow(UUID id) {
         return taskRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException(
                         "Tarefa não encontrada com ID: " + id));
     }
 
     //TODO:MOVER ESSA FUNÇÃO PARA UM MAPPER
-    private TaskResponse mapToResponse(Task task) {
+    private TaskResponse mapToResponse(TaskEntity taskEntity) {
         return TaskResponse.builder()
-                .id(task.getId())
-                .title(task.getTitle())
-                .name(task.getName())
-                .description(task.getDescription())
-                .deadline(task.getDeadline())
-                .status(task.getStatus())
-                .statusDisplayName(task.getStatus().getDisplayName())
-                .courseId(task.getCourse().getId())
-                .courseName(task.getCourse().getName())
-                .createdById(task.getCreatedBy() != null ? task.getCreatedBy().getId() : null)
-                .createdByName(task.getCreatedBy() != null ? task.getCreatedBy().getName() : null)
-                .overdue(task.isOverdue())
-                .createdAt(task.getCreatedAt())
-                .updatedAt(task.getUpdatedAt())
+                .id(taskEntity.getId())
+                .title(taskEntity.getTitle())
+                .name(taskEntity.getName())
+                .description(taskEntity.getDescription())
+                .deadline(taskEntity.getDeadline())
+                .status(taskEntity.getStatus())
+                .statusDisplayName(taskEntity.getStatus().getDisplayName())
+                .courseId(taskEntity.getCourseEntity().getId())
+                .courseName(taskEntity.getCourseEntity().getName())
+                .createdById(taskEntity.getCreatedBy() != null ? taskEntity.getCreatedBy().getId() : null)
+                .createdByName(taskEntity.getCreatedBy() != null ? taskEntity.getCreatedBy().getName() : null)
+                .overdue(taskEntity.isOverdue())
+                .createdAt(taskEntity.getCreatedAt())
+                .updatedAt(taskEntity.getUpdatedAt())
                 .build();
     }
 }

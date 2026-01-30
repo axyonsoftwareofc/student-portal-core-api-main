@@ -20,7 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Course extends BaseEntity {
+public class CourseEntity extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -45,7 +45,7 @@ public class Course extends BaseEntity {
 
     @Builder.Default
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Task> tasks = new ArrayList<>();
+    private List<TaskEntity> taskEntities = new ArrayList<>();
 
 
     public boolean isActive() {

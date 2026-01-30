@@ -1,7 +1,7 @@
 package br.com.student.portal.validation;
 
-import br.com.student.portal.entity.Course;
-import br.com.student.portal.entity.Task;
+import br.com.student.portal.entity.CourseEntity;
+import br.com.student.portal.entity.TaskEntity;
 import br.com.student.portal.exception.BadRequestException;
 import org.springframework.stereotype.Component;
 
@@ -47,21 +47,21 @@ public class TaskValidator {
         }
     }
 
-    public static void validateCourse(Course course) {
-        if (course == null) {
+    public static void validateCourse(CourseEntity courseEntity) {
+        if (courseEntity == null) {
             throw new BadRequestException(COURSE_FIELD + " é obrigatório.");
         }
-        if (course.getId() == null) {
+        if (courseEntity.getId() == null) {
             throw new BadRequestException(COURSE_FIELD + " deve ter um ID válido.");
         }
     }
 
-    public static void validateTaskFields(Task task) {
-        validateRequiredField(task, "Task");
-        validateName(task.getName());
-        validateDeadLine(task.getDeadline());
-        validateDescription(task.getDescription());
-        validateTitle(task.getTitle());
-        validateCourse(task.getCourse());
+    public static void validateTaskFields(TaskEntity taskEntity) {
+        validateRequiredField(taskEntity, "Task");
+        validateName(taskEntity.getName());
+        validateDeadLine(taskEntity.getDeadline());
+        validateDescription(taskEntity.getDescription());
+        validateTitle(taskEntity.getTitle());
+        validateCourse(taskEntity.getCourseEntity());
     }
 }

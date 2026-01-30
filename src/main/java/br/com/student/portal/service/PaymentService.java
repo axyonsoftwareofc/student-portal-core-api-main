@@ -2,8 +2,8 @@ package br.com.student.portal.service;
 
 import br.com.student.portal.dto.request.PaymentRequest;
 import br.com.student.portal.dto.response.PaymentResponse;
-import br.com.student.portal.entity.Payment;
-import br.com.student.portal.entity.User;
+import br.com.student.portal.entity.PaymentEntity;
+import br.com.student.portal.entity.UserEntity;
 import br.com.student.portal.entity.enums.PaymentStatus;
 import br.com.student.portal.exception.BadRequestException;
 import br.com.student.portal.exception.ObjectNotFoundException;
@@ -38,8 +38,8 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public PaymentResponse getPaymentById(UUID id) {
         log.debug("Buscando pagamento por ID: {}", id);
-        Payment payment = findPaymentOrThrow(id);
-        return mapToResponse(payment);
+        PaymentEntity paymentEntity = findPaymentOrThrow(id);
+        return mapToResponse(paymentEntity);
     }
 
     @Transactional(readOnly = true)
@@ -64,12 +64,12 @@ public class PaymentService {
     public PaymentResponse createPayment(PaymentRequest request) {
         log.info("Criando novo pagamento para estudante: {}", request.getStudentId());
 
-        User student = userRepository.findById(request.getStudentId())
+        UserEntity student = userRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ObjectNotFoundException(
                         "Estudante não encontrado com ID: " + request.getStudentId()));
 
         //TODO:MOVER ESSA LÓGICA ABAIXO PARA UM BUILDER
-        var payment = Payment.builder()
+        var payment = PaymentEntity.builder()
                 .student(student)
                 .amount(request.getAmount())
                 .dueDate(request.getDueDate())
@@ -87,18 +87,18 @@ public class PaymentService {
     public PaymentResponse markAsPaid(UUID id) {
         log.info("Marcando pagamento {} como pago", id);
 
-        Payment payment = findPaymentOrThrow(id);
+        PaymentEntity paymentEntity = findPaymentOrThrow(id);
 
-        if (!payment.allowsModification()) {
+        if (!paymentEntity.allowsModification()) {
             throw new BadRequestException(
-                    "Pagamento não pode ser alterado no status atual: " + payment.getStatus());
+                    "Pagamento não pode ser alterado no status atual: " + paymentEntity.getStatus());
         }
 
-        payment.markAsPaid();
-        Payment updatedPayment = paymentRepository.save(payment);
+        paymentEntity.markAsPaid();
+        PaymentEntity updatedPaymentEntity = paymentRepository.save(paymentEntity);
 
         log.info("Pagamento {} marcado como PAGO", id);
-        return mapToResponse(updatedPayment);
+        return mapToResponse(updatedPaymentEntity);
     }
 
     @Transactional
@@ -113,10 +113,10 @@ public class PaymentService {
         }
 
         payment.cancel();
-        Payment updatedPayment = paymentRepository.save(payment);
+        PaymentEntity updatedPaymentEntity = paymentRepository.save(payment);
 
         log.info("Pagamento {} cancelado", id);
-        return mapToResponse(updatedPayment);
+        return mapToResponse(updatedPaymentEntity);
     }
 
     @Transactional
@@ -148,7 +148,7 @@ public class PaymentService {
     }
 
 
-    private Payment findPaymentOrThrow(UUID id) {
+    private PaymentEntity findPaymentOrThrow(UUID id) {
         return paymentRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException(
                         "Pagamento não encontrado com ID: " + id));
@@ -162,19 +162,19 @@ public class PaymentService {
     }
 
     //TODO:MOVER ISSO PARA UM MAPPER
-    private PaymentResponse mapToResponse(Payment payment) {
+    private PaymentResponse mapToResponse(PaymentEntity paymentEntity) {
         return PaymentResponse.builder()
-                .id(payment.getId())
-                .studentId(payment.getStudent().getId())
-                .studentName(payment.getStudent().getName())
-                .amount(payment.getAmount())
-                .paymentDate(payment.getPaymentDate())
-                .dueDate(payment.getDueDate())
-                .status(payment.getStatus())
-                .statusDisplayName(payment.getStatus().getDisplayName())
-                .paymentMethod(payment.getPaymentMethod())
-                .overdue(payment.isOverdue())
-                .createdAt(payment.getCreatedAt())
+                .id(paymentEntity.getId())
+                .studentId(paymentEntity.getStudent().getId())
+                .studentName(paymentEntity.getStudent().getName())
+                .amount(paymentEntity.getAmount())
+                .paymentDate(paymentEntity.getPaymentDate())
+                .dueDate(paymentEntity.getDueDate())
+                .status(paymentEntity.getStatus())
+                .statusDisplayName(paymentEntity.getStatus().getDisplayName())
+                .paymentMethod(paymentEntity.getPaymentMethod())
+                .overdue(paymentEntity.isOverdue())
+                .createdAt(paymentEntity.getCreatedAt())
                 .build();
     }
 }

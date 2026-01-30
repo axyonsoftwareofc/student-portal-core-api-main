@@ -24,7 +24,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity  // ✅ Permite @PreAuthorize nos controllers
+@EnableMethodSecurity
 public class SecurityConfigurations {
 
     private final SecurityFilter securityFilter;

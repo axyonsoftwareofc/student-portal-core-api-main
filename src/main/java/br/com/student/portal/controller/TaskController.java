@@ -2,7 +2,7 @@ package br.com.student.portal.controller;
 
 import br.com.student.portal.dto.request.TaskRequest;
 import br.com.student.portal.dto.response.TaskResponse;
-import br.com.student.portal.entity.User;
+import br.com.student.portal.entity.UserEntity;
 import br.com.student.portal.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,7 +56,7 @@ public class TaskController {
             @Valid @RequestBody TaskRequest request,
             Authentication authentication) {
 
-        User createdBy = (User) authentication.getPrincipal();
+        UserEntity createdBy = (UserEntity) authentication.getPrincipal();
         TaskResponse response = taskService.createTask(request, createdBy);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

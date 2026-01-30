@@ -48,32 +48,12 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPendingPaymentsByStudent(studentId));
     }
 
-    @GetMapping("/student/{studentId}/has-pending")
-    @Operation(summary = "Verifica se estudante tem pagamentos pendentes")
-    public ResponseEntity<Boolean> hasStudentPendingPayments(@PathVariable UUID studentId) {
-        return ResponseEntity.ok(paymentService.hasStudentPendingPayments(studentId));
-    }
-
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cria um novo pagamento")
     public ResponseEntity<PaymentResponse> createPayment(@Valid @RequestBody PaymentRequest request) {
         PaymentResponse response = paymentService.createPayment(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @PatchMapping("/{id}/pay")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Marca pagamento como pago")
-    public ResponseEntity<PaymentResponse> markAsPaid(@PathVariable UUID id) {
-        return ResponseEntity.ok(paymentService.markAsPaid(id));
-    }
-
-    @PatchMapping("/{id}/cancel")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Cancela um pagamento")
-    public ResponseEntity<PaymentResponse> cancelPayment(@PathVariable UUID id) {
-        return ResponseEntity.ok(paymentService.cancelPayment(id));
     }
 
     @DeleteMapping("/{id}")

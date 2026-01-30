@@ -1,6 +1,6 @@
 package br.com.student.portal.service;
 
-import br.com.student.portal.entity.User;
+import br.com.student.portal.entity.UserEntity;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
@@ -37,7 +37,7 @@ public class TokenService {
         log.info("TokenService inicializado com sucesso");
     }
 
-    public String generateToken(User user) {
+    public String generateToken(UserEntity userEntity) {
         try {
             Instant expiresAt = LocalDateTime.now()
                     .plusHours(expirationHours)
@@ -46,19 +46,19 @@ public class TokenService {
 
             String token = JWT.create()
                     .withIssuer(ISSUER)
-                    .withSubject(user.getEmail())
-                    .withClaim("userId", user.getId().toString())
-                    .withClaim("role", user.getRole().name())
-                    .withClaim("name", user.getName())
+                    .withSubject(userEntity.getEmail())
+                    .withClaim("userId", userEntity.getId().toString())
+                    .withClaim("role", userEntity.getRole().name())
+                    .withClaim("name", userEntity.getName())
                     .withIssuedAt(Instant.now())
                     .withExpiresAt(expiresAt)
                     .sign(algorithm);
 
-            log.debug("Token gerado para usuário: {}", user.getEmail());
+            log.debug("Token gerado para usuário: {}", userEntity.getEmail());
             return token;
 
         } catch (JWTCreationException ex) {
-            log.error("Erro ao gerar token JWT para usuário {}: {}", user.getEmail(), ex.getMessage());
+            log.error("Erro ao gerar token JWT para usuário {}: {}", userEntity.getEmail(), ex.getMessage());
             throw new InternalAuthenticationServiceException("Erro ao gerar token de autenticação.", ex);
         }
     }

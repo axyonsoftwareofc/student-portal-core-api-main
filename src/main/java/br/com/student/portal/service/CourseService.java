@@ -2,7 +2,7 @@ package br.com.student.portal.service;
 
 import br.com.student.portal.dto.request.CourseRequest;
 import br.com.student.portal.dto.response.CourseResponse;
-import br.com.student.portal.entity.Course;
+import br.com.student.portal.entity.CourseEntity;
 import br.com.student.portal.entity.enums.CourseStatus;
 import br.com.student.portal.exception.BadRequestException;
 import br.com.student.portal.exception.ObjectNotFoundException;
@@ -53,7 +53,7 @@ public class CourseService {
         }
 
         //TODO:MIGRAR ESSE BUILDER PRA UM MAPPER
-        var course = Course.builder()
+        var course = CourseEntity.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .startDate(request.getStartDate())
@@ -91,29 +91,29 @@ public class CourseService {
     @Transactional
     public void deleteCourse(UUID id) {
         log.info("Deletando curso ID: {}", id);
-        Course course = findCourseOrThrow(id);
-        courseRepository.delete(course);
+        CourseEntity courseEntity = findCourseOrThrow(id);
+        courseRepository.delete(courseEntity);
         log.info("Curso deletado: {}", id);
     }
 
-    private Course findCourseOrThrow(UUID id) {
+    private CourseEntity findCourseOrThrow(UUID id) {
         return courseRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException("Curso não encontrado com ID: " + id));
     }
 
     //TODO:MOVER ESSA FUNÇÃO ABAIXO PARA UM MAPPER
-    private CourseResponse mapToResponse(Course course) {
+    private CourseResponse mapToResponse(CourseEntity courseEntity) {
         return CourseResponse.builder()
-                .id(course.getId())
-                .name(course.getName())
-                .description(course.getDescription())
-                .startDate(course.getStartDate())
-                .endDate(course.getEndDate())
-                .status(course.getStatus())
-                .statusDisplayName(course.getStatus().getDisplayName())
-                .isActive(course.isActive())
-                .createdAt(course.getCreatedAt())
-                .updatedAt(course.getUpdatedAt())
+                .id(courseEntity.getId())
+                .name(courseEntity.getName())
+                .description(courseEntity.getDescription())
+                .startDate(courseEntity.getStartDate())
+                .endDate(courseEntity.getEndDate())
+                .status(courseEntity.getStatus())
+                .statusDisplayName(courseEntity.getStatus().getDisplayName())
+                .isActive(courseEntity.isActive())
+                .createdAt(courseEntity.getCreatedAt())
+                .updatedAt(courseEntity.getUpdatedAt())
                 .build();
     }
 }

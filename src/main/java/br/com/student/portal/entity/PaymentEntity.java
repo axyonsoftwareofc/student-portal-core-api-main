@@ -21,7 +21,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Payment extends BaseEntity {
+public class PaymentEntity extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -29,7 +29,7 @@ public class Payment extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
-    private User student;
+    private UserEntity student;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;

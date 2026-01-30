@@ -9,9 +9,6 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-/**
- * Classe base para entidades com campos de auditoria.
- */
 @Getter
 @Setter
 @MappedSuperclass

@@ -23,7 +23,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User extends BaseEntity implements UserDetails {
+public class UserEntity extends BaseEntity implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

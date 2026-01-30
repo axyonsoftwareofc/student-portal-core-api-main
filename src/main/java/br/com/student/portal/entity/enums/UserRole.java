@@ -15,9 +15,6 @@ public enum UserRole {
     private final String description;
     private final int hierarchyLevel;
 
-    /**
-     * Verifica se este role tem permissão igual ou superior a outro.
-     */
     public boolean hasPermissionOver(UserRole other) {
         return this.hierarchyLevel <= other.hierarchyLevel;
     }
